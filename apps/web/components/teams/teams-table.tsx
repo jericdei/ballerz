@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTable } from "@/components/data-table";
+import { TeamRowActions } from "@/components/teams/team-row-actions";
 
 export type TeamRow = {
   id: number;
@@ -46,13 +47,18 @@ export function TeamsTable({ data, leagueId }: TeamsTableProps) {
       id: "actions",
       header: "",
       cell: ({ row }) => (
-        <Link
-          className="text-sm text-primary hover:underline"
-          href={`/leagues/${leagueId}/teams/${row.original.id}`}
+        <div
+          className="flex items-center justify-end gap-2"
           onClick={(event) => event.stopPropagation()}
         >
-          Roster
-        </Link>
+          <Link
+            className="text-sm text-primary hover:underline"
+            href={`/leagues/${leagueId}/teams/${row.original.id}`}
+          >
+            Roster
+          </Link>
+          <TeamRowActions leagueId={leagueId} team={row.original} />
+        </div>
       ),
     },
   ];

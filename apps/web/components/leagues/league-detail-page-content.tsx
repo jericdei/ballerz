@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MIN_TEAMS_PER_LEAGUE } from "@repo/api/constants";
 
 import { AppShell } from "@/components/app-shell";
-import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
+import { LeagueDetailActions } from "@/components/leagues/league-detail-actions";
 import { TeamsTable } from "@/components/teams/teams-table";
 import { Badge } from "@/components/ui/badge";
 import { useTRPC } from "@/trpc/client";
@@ -35,7 +35,14 @@ export function LeagueDetailPageContent({
 
   return (
     <AppShell
-      actions={league ? <CreateTeamDialog leagueId={leagueId} /> : null}
+      actions={
+        league ? (
+          <LeagueDetailActions
+            leagueId={leagueId}
+            leagueName={league.name ?? "Untitled league"}
+          />
+        ) : null
+      }
       breadcrumbs={[
         { label: "Leagues", href: "/leagues" },
         { label: league?.name ?? "League" },

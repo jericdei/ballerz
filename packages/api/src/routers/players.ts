@@ -1,10 +1,16 @@
 import { TRPCError } from "@trpc/server";
-import { and, count, eq, isNull } from "drizzle-orm";
+import { and, count, eq, isNull, ne } from "drizzle-orm";
 import { z } from "zod";
 
 import { db, players } from "@repo/db";
 
-import { assertTeamOwner, auditInsert } from "../lib/access";
+import {
+  assertPlayerOwner,
+  assertTeamOwner,
+  auditDelete,
+  auditInsert,
+  auditUpdate,
+} from "../lib/access";
 import { MAX_PLAYERS_PER_TEAM } from "../lib/constants";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -14,6 +20,19 @@ const teamIdInput = z.object({
 
 const createPlayerInput = z.object({
   teamId: z.number().int().positive(),
+  firstName: z.string().trim().min(1, "First name is required"),
+  lastName: z.string().trim().min(1, "Last name is required"),
+  number: z.number().int().min(0).max(99),
+  position: z.string().trim().optional(),
+  isCaptain: z.boolean().optional().default(false),
+});
+
+const playerIdInput = z.object({
+  id: z.number().int().positive(),
+});
+
+const updatePlayerInput = z.object({
+  id: z.number().int().positive(),
   firstName: z.string().trim().min(1, "First name is required"),
   lastName: z.string().trim().min(1, "Last name is required"),
   number: z.number().int().min(0).max(99),
@@ -113,5 +132,92 @@ export const playersRouter = createTRPCRouter({
       }
 
       return player;
+    }),
+
+  update: protectedProcedure
+    .input(updatePlayerInput)
+    .mutation(async ({ ctx, input }) => {
+      const player = await assertPlayerOwner(input.id, ctx.session.user.id);
+
+      if (player.teamId == null) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+
+      const teamId = player.teamId;
+
+      const [existingNumber] = await db
+        .select({ id: players.id })
+        .from(players)
+        .where(
+          and(
+            eq(players.teamId, teamId),
+            eq(players.number, input.number),
+            isNull(players.deletedAt),
+            ne(players.id, input.id),
+          ),
+        )
+        .limit(1);
+
+      if (existingNumber) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Jersey number ${input.number} is already taken on this team`,
+        });
+      }
+
+      const [updated] = await db
+        .update(players)
+        .set({
+          firstName: input.firstName,
+          lastName: input.lastName,
+          number: input.number,
+          position: input.position ?? null,
+          isCaptain: input.isCaptain,
+          ...auditUpdate(ctx.session.user.id),
+        })
+        .where(and(eq(players.id, input.id), isNull(players.deletedAt)))
+        .returning({
+          id: players.id,
+          teamId: players.teamId,
+          firstName: players.firstName,
+          lastName: players.lastName,
+          number: players.number,
+          position: players.position,
+          isCaptain: players.isCaptain,
+          createdAt: players.createdAt,
+        });
+
+      if (!updated) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+
+      return updated;
+    }),
+
+  delete: protectedProcedure
+    .input(playerIdInput)
+    .mutation(async ({ ctx, input }) => {
+      await assertPlayerOwner(input.id, ctx.session.user.id);
+
+      const [deleted] = await db
+        .update(players)
+        .set(auditDelete(ctx.session.user.id))
+        .where(and(eq(players.id, input.id), isNull(players.deletedAt)))
+        .returning({ id: players.id });
+
+      if (!deleted) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+
+      return deleted;
     }),
 });

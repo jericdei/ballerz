@@ -6,8 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { MAX_PLAYERS_PER_TEAM } from "@repo/api/constants";
 
 import { AppShell } from "@/components/app-shell";
-import { CreatePlayerDialog } from "@/components/players/create-player-dialog";
 import { PlayersTable } from "@/components/players/players-table";
+import { TeamDetailActions } from "@/components/teams/team-detail-actions";
 import { useTRPC } from "@/trpc/client";
 
 type TeamDetailPageContentProps = {
@@ -49,10 +49,12 @@ export function TeamDetailPageContent({
     <AppShell
       actions={
         team ? (
-          <CreatePlayerDialog
+          <TeamDetailActions
+            leagueId={leagueId}
             maxPlayers={MAX_PLAYERS_PER_TEAM}
             playerCount={players.length}
             teamId={teamId}
+            teamName={team.name ?? "Untitled team"}
           />
         ) : null
       }
@@ -74,7 +76,7 @@ export function TeamDetailPageContent({
       playersQuery.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading roster...</p>
       ) : team ? (
-        <PlayersTable data={players} />
+        <PlayersTable data={players} teamId={teamId} />
       ) : null}
     </AppShell>
   );

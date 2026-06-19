@@ -4,7 +4,13 @@ import { z } from "zod";
 
 import { db, players, teams } from "@repo/db";
 
-import { assertLeagueOwner, auditInsert } from "../lib/access";
+import {
+  assertLeagueOwner,
+  assertTeamOwner,
+  auditDelete,
+  auditInsert,
+  auditUpdate,
+} from "../lib/access";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const leagueIdInput = z.object({
@@ -13,6 +19,15 @@ const leagueIdInput = z.object({
 
 const createTeamInput = z.object({
   leagueId: z.number().int().positive(),
+  name: z.string().trim().min(1, "Team name is required"),
+});
+
+const teamIdInput = z.object({
+  id: z.number().int().positive(),
+});
+
+const updateTeamInput = z.object({
+  id: z.number().int().positive(),
   name: z.string().trim().min(1, "Team name is required"),
 });
 
@@ -77,5 +92,65 @@ export const teamsRouter = createTRPCRouter({
         ...team,
         playerCount: 0,
       };
+    }),
+
+  update: protectedProcedure
+    .input(updateTeamInput)
+    .mutation(async ({ ctx, input }) => {
+      const team = await assertTeamOwner(input.id, ctx.session.user.id);
+
+      const [updated] = await db
+        .update(teams)
+        .set({
+          name: input.name,
+          ...auditUpdate(ctx.session.user.id),
+        })
+        .where(and(eq(teams.id, input.id), isNull(teams.deletedAt)))
+        .returning({
+          id: teams.id,
+          name: teams.name,
+          leagueId: teams.leagueId,
+          createdAt: teams.createdAt,
+        });
+
+      if (!updated) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Team not found",
+        });
+      }
+
+      const [result] = await db
+        .select({ playerCount: count(players.id) })
+        .from(players)
+        .where(and(eq(players.teamId, input.id), isNull(players.deletedAt)));
+
+      return {
+        ...updated,
+        playerCount: Number(result?.playerCount ?? 0),
+        leagueId: team.leagueId,
+      };
+    }),
+
+  delete: protectedProcedure
+    .input(teamIdInput)
+    .mutation(async ({ ctx, input }) => {
+      await assertTeamOwner(input.id, ctx.session.user.id);
+
+      const deleteAudit = auditDelete(ctx.session.user.id);
+
+      await db.transaction(async (tx) => {
+        await tx
+          .update(players)
+          .set(deleteAudit)
+          .where(and(eq(players.teamId, input.id), isNull(players.deletedAt)));
+
+        await tx
+          .update(teams)
+          .set(deleteAudit)
+          .where(and(eq(teams.id, input.id), isNull(teams.deletedAt)));
+      });
+
+      return { id: input.id };
     }),
 });
