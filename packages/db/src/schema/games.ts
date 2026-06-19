@@ -1,12 +1,16 @@
-import { pgEnum, pgTable } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, timestamp } from "drizzle-orm/pg-core";
 
 import { auditColumns, createAuditRelations } from "./audit";
 import { idColumn, timestamps } from "./columns";
+import { gamePeriodEnum, gameStatusEnum } from "./game-enums";
+import { gameRosters } from "./game-rosters";
+import { gameStatEvents } from "./game-stat-events";
 import { leagues } from "./leagues";
 import { teams } from "./teams";
-import { InferSelectModel } from "./types";
+import type { InferSelectModel } from "./types";
 
 const gamesTable = "games";
+
 export const gameTypesEnum = pgEnum("game_types", [
   "regular",
   "playoffs",
@@ -26,8 +30,12 @@ export const games = pgTable(gamesTable, ({ integer }) => ({
     onDelete: "cascade",
   }),
   type: gameTypesEnum("type").notNull().default("regular"),
-  firstTeamScore: integer("first_team_score").notNull(),
-  secondTeamScore: integer("second_team_score").notNull(),
+  status: gameStatusEnum("status").notNull().default("scheduled"),
+  currentPeriod: gamePeriodEnum("current_period"),
+  firstTeamScore: integer("first_team_score").notNull().default(0),
+  secondTeamScore: integer("second_team_score").notNull().default(0),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
   ...timestamps,
   ...auditColumns,
 }));
@@ -35,7 +43,7 @@ export const games = pgTable(gamesTable, ({ integer }) => ({
 export const gamesRelations = createAuditRelations(
   games,
   gamesTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
     league: one(leagues, {
       fields: [games.leagueId],
       references: [leagues.id],
@@ -43,11 +51,15 @@ export const gamesRelations = createAuditRelations(
     firstTeam: one(teams, {
       fields: [games.firstTeamId],
       references: [teams.id],
+      relationName: "game_first_team",
     }),
     secondTeam: one(teams, {
       fields: [games.secondTeamId],
       references: [teams.id],
+      relationName: "game_second_team",
     }),
+    rosters: many(gameRosters),
+    statEvents: many(gameStatEvents),
   }),
 );
 
