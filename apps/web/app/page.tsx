@@ -1,5 +1,5 @@
-import { HomeContent } from "@/components/home-content";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <HomeContent />;
+  redirect("/leagues");
 }
