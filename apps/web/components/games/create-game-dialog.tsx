@@ -41,6 +41,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useTRPC } from "@/trpc/client";
 
 const formSchema = z
@@ -128,7 +129,10 @@ export function CreateGameDialog({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog
+      onOpenChange={guardDialogOpenChange(createMutation.isPending, setOpen)}
+      open={open}
+    >
       <DialogTrigger asChild>
         <Button className="gap-1.5" disabled={disabled} size="sm" type="button">
           <CalendarPlus className="size-4" />

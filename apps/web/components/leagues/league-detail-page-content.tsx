@@ -43,7 +43,7 @@ export function LeagueDetailPageContent({
     trpc.games.listByLeague.queryOptions({ leagueId }),
   );
 
-  if (leagueQuery.isError) {
+  if (leagueQuery.isError || teamsQuery.isError || gamesQuery.isError) {
     notFound();
   }
 

@@ -2,6 +2,7 @@
 
 import { UserRound } from "lucide-react";
 
+import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import {
   getStatsByCategory,
   statCategories,
@@ -64,6 +65,7 @@ export function StatsheetStatPanel() {
   const selectedPlayerId = useStatsheetStore((state) => state.selectedPlayerId);
   const rosters = useStatsheetStore((state) => state.rosters);
   const applyStat = useStatsheetStore((state) => state.applyStat);
+  const { isBusy } = useStatsheetMutations();
 
   const selectedPlayer = rosters.find(
     (row) => row.playerId === selectedPlayerId,
@@ -116,7 +118,7 @@ export function StatsheetStatPanel() {
                 {buttons.map((config) => (
                   <StatButton
                     category={config.category}
-                    disabled={!selectedPlayerId}
+                    disabled={!selectedPlayerId || isBusy}
                     icon={config.icon}
                     key={config.eventType}
                     label={config.label}

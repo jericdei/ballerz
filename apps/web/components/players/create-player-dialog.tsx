@@ -26,6 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useTRPC } from "@/trpc/client";
 
 const formSchema = z.object({
@@ -94,7 +95,10 @@ export function CreatePlayerDialog({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog
+      onOpenChange={guardDialogOpenChange(createMutation.isPending, setOpen)}
+      open={open}
+    >
       <DialogTrigger asChild>
         <Button className="gap-1.5" disabled={isFull} size="sm" type="button">
           <Plus className="size-4" />

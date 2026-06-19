@@ -10,6 +10,7 @@ import { TeamRowActions } from "@/components/teams/team-row-actions";
 export type TeamRow = {
   id: number;
   name: string | null;
+  color: string;
   leagueId: number | null;
   createdAt: Date;
   playerCount: number;
@@ -24,6 +25,17 @@ export function TeamsTable({ data, leagueId }: TeamsTableProps) {
   const router = useRouter();
 
   const columns: ColumnDef<TeamRow>[] = [
+    {
+      accessorKey: "color",
+      header: "Color",
+      cell: ({ row }) => (
+        <span
+          aria-hidden
+          className="inline-block size-5 rounded-full border shadow-sm"
+          style={{ backgroundColor: row.original.color }}
+        />
+      ),
+    },
     {
       accessorKey: "name",
       header: "Name",

@@ -24,6 +24,8 @@ export async function loadStatsheetState(gameId: number) {
       secondTeamId: games.secondTeamId,
       firstTeamName: firstTeam.name,
       secondTeamName: secondTeam.name,
+      firstTeamColor: firstTeam.color,
+      secondTeamColor: secondTeam.color,
       type: games.type,
       status: games.status,
       currentPeriod: games.currentPeriod,

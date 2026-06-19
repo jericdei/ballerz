@@ -37,6 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useTRPC } from "@/trpc/client";
 
 const formSchema = z
@@ -101,7 +102,13 @@ export function QuickStartGameDialog({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog
+      onOpenChange={guardDialogOpenChange(
+        quickStartMutation.isPending,
+        setOpen,
+      )}
+      open={open}
+    >
       <DialogTrigger asChild>
         <Button
           className="gap-1.5"

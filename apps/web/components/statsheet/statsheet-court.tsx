@@ -15,16 +15,18 @@ export function StatsheetCourt() {
   return (
     <section className="grid h-full min-h-0 gap-4 overflow-hidden p-4 md:grid-cols-2 md:p-6">
       <StatsheetTeamColumn
-        accent="away"
         gameId={game.id}
         score={firstTeamScore}
+        sideLabel="Away"
+        teamColor={game.firstTeamColor}
         teamId={game.firstTeamId}
         teamName={game.firstTeamName ?? "Team 1"}
       />
       <StatsheetTeamColumn
-        accent="home"
         gameId={game.id}
         score={secondTeamScore}
+        sideLabel="Home"
+        teamColor={game.secondTeamColor}
         teamId={game.secondTeamId}
         teamName={game.secondTeamName ?? "Team 2"}
       />

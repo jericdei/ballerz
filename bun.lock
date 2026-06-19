@@ -79,6 +79,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@repo/shared": "*",
+        "bcryptjs": "^3.0.2",
         "drizzle-orm": "^0.44.2",
         "postgres": "^3.4.7",
       },

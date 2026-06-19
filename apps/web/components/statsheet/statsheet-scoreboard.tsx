@@ -5,7 +5,9 @@ import { Clock } from "lucide-react";
 import { GAME_PERIODS } from "@repo/shared";
 
 import { formatPeriodLabel } from "@/components/statsheet/statsheet-labels";
+import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import { Badge } from "@/components/ui/badge";
+import { getTeamTheme, withAlpha } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 
@@ -23,19 +25,30 @@ export function StatsheetScoreboard() {
   const firstTeamScore = useStatsheetStore((state) => state.firstTeamScore);
   const secondTeamScore = useStatsheetStore((state) => state.secondTeamScore);
   const dirty = useStatsheetStore((state) => state.dirty);
+  const { isBusy, isSaving, isUndoing } = useStatsheetMutations();
 
   if (!game?.firstTeamId || !game.secondTeamId) {
     return null;
   }
 
+  const firstTheme = getTeamTheme(game.firstTeamColor);
+  const secondTheme = getTeamTheme(game.secondTeamColor);
   const statusLabel = game.status.replaceAll("_", " ");
 
   return (
-    <section className="shrink-0 border-b bg-gradient-to-r from-blue-500/5 via-background to-orange-500/5 px-4 py-4 md:px-6">
+    <section
+      className="shrink-0 border-b px-4 py-4 md:px-6"
+      style={{
+        background: `linear-gradient(to right, ${withAlpha(firstTheme.color, 0.06)} 0%, transparent 50%, ${withAlpha(secondTheme.color, 0.06)} 100%)`,
+      }}
+    >
       <div className="mx-auto flex max-w-[1600px] flex-col gap-4">
         <div className="grid items-center gap-4 lg:grid-cols-[1fr_auto_1fr]">
           <div className="text-right">
-            <p className="text-xs font-medium uppercase tracking-wider text-blue-600 dark:text-blue-400">
+            <p
+              className="text-xs font-medium uppercase tracking-wider"
+              style={{ color: firstTheme.color }}
+            >
               Away
             </p>
             <p className="truncate text-lg font-semibold md:text-xl">
@@ -44,17 +57,26 @@ export function StatsheetScoreboard() {
           </div>
 
           <div className="flex items-center justify-center gap-3 md:gap-5">
-            <span className="min-w-[3ch] text-center text-4xl font-bold tabular-nums text-blue-600 md:text-5xl dark:text-blue-400">
+            <span
+              className="min-w-[3ch] text-center text-4xl font-bold tabular-nums md:text-5xl"
+              style={{ color: firstTheme.color }}
+            >
               {firstTeamScore}
             </span>
             <span className="text-2xl font-light text-muted-foreground">–</span>
-            <span className="min-w-[3ch] text-center text-4xl font-bold tabular-nums text-orange-600 md:text-5xl dark:text-orange-400">
+            <span
+              className="min-w-[3ch] text-center text-4xl font-bold tabular-nums md:text-5xl"
+              style={{ color: secondTheme.color }}
+            >
               {secondTeamScore}
             </span>
           </div>
 
           <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-orange-600 dark:text-orange-400">
+            <p
+              className="text-xs font-medium uppercase tracking-wider"
+              style={{ color: secondTheme.color }}
+            >
               Home
             </p>
             <p className="truncate text-lg font-semibold md:text-xl">
@@ -73,7 +95,9 @@ export function StatsheetScoreboard() {
                   currentPeriod === period
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  isBusy && "pointer-events-none opacity-50",
                 )}
+                disabled={isBusy}
                 key={period}
                 onClick={() => setPeriod(period)}
                 type="button"
@@ -96,6 +120,18 @@ export function StatsheetScoreboard() {
           {dirty ? (
             <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
               Unsaved changes
+            </Badge>
+          ) : null}
+
+          {isSaving ? (
+            <Badge className="bg-sky-500/15 text-sky-700 dark:text-sky-300">
+              Saving...
+            </Badge>
+          ) : null}
+
+          {isUndoing ? (
+            <Badge className="bg-violet-500/15 text-violet-700 dark:text-violet-300">
+              Undoing...
             </Badge>
           ) : null}
         </div>

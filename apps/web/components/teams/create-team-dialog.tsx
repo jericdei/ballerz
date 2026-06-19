@@ -7,6 +7,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { z } from "zod";
 
+import { DEFAULT_TEAM_COLOR, teamColorSchema } from "@repo/api/constants";
+
+import { TeamColorField } from "@/components/teams/team-color-field";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,10 +29,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useTRPC } from "@/trpc/client";
 
 const formSchema = z.object({
   name: z.string().trim().min(1, "Team name is required"),
+  color: teamColorSchema,
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -44,7 +49,7 @@ export function CreateTeamDialog({ leagueId }: CreateTeamDialogProps) {
   const [open, setOpen] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: "" },
+    defaultValues: { name: "", color: DEFAULT_TEAM_COLOR },
   });
 
   const createMutation = useMutation(
@@ -64,11 +69,18 @@ export function CreateTeamDialog({ leagueId }: CreateTeamDialogProps) {
   );
 
   function onSubmit(values: FormValues) {
-    createMutation.mutate({ leagueId, name: values.name });
+    createMutation.mutate({
+      leagueId,
+      name: values.name,
+      color: values.color,
+    });
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog
+      onOpenChange={guardDialogOpenChange(createMutation.isPending, setOpen)}
+      open={open}
+    >
       <DialogTrigger asChild>
         <Button className="gap-1.5" size="sm" type="button">
           <Plus className="size-4" />
@@ -92,6 +104,23 @@ export function CreateTeamDialog({ leagueId }: CreateTeamDialogProps) {
                   <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input placeholder="Warriors" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="color"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Color</FormLabel>
+                  <FormControl>
+                    <TeamColorField
+                      id="create-team-color"
+                      onChange={field.onChange}
+                      value={field.value}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

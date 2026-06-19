@@ -59,6 +59,7 @@ export function TeamDetailPageContent({
             leagueId={leagueId}
             maxPlayers={MAX_PLAYERS_PER_TEAM}
             playerCount={players.length}
+            teamColor={team.color}
             teamId={teamId}
             teamName={team.name ?? "Untitled team"}
           />

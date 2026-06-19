@@ -45,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useTRPC } from "@/trpc/client";
 
 const formSchema = z
@@ -158,7 +159,13 @@ export function EditGameDialog({
   }
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog
+      onOpenChange={guardDialogOpenChange(
+        updateMutation.isPending,
+        onOpenChange,
+      )}
+      open={open}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit game</DialogTitle>

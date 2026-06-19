@@ -64,6 +64,7 @@ export function TeamRowActions({
         </DropdownMenuContent>
       </DropdownMenu>
       <EditTeamDialog
+        defaultColor={team.color}
         defaultName={team.name ?? ""}
         leagueId={leagueId}
         onOpenChange={setEditOpen}

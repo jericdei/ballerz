@@ -2,11 +2,11 @@
 
 import type { PlayerStatDeltas } from "@repo/shared";
 
+import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import { Badge } from "@/components/ui/badge";
+import { getTeamTheme } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
-
-type TeamAccent = "away" | "home";
 
 type StatsheetPlayerCardProps = {
   playerId: number;
@@ -14,17 +14,7 @@ type StatsheetPlayerCardProps = {
   name: string;
   stats: PlayerStatDeltas;
   isGuest?: boolean;
-  accent: TeamAccent;
-};
-
-const accentRing: Record<TeamAccent, string> = {
-  away: "ring-blue-500 border-blue-500",
-  home: "ring-orange-500 border-orange-500",
-};
-
-const accentJersey: Record<TeamAccent, string> = {
-  away: "bg-blue-600 text-white dark:bg-blue-500",
-  home: "bg-orange-600 text-white dark:bg-orange-500",
+  teamColor: string;
 };
 
 export function StatsheetPlayerCard({
@@ -33,31 +23,39 @@ export function StatsheetPlayerCard({
   name,
   stats,
   isGuest = false,
-  accent,
+  teamColor,
 }: StatsheetPlayerCardProps) {
   const selectedPlayerId = useStatsheetStore((state) => state.selectedPlayerId);
   const selectPlayer = useStatsheetStore((state) => state.selectPlayer);
+  const { isBusy } = useStatsheetMutations();
   const isSelected = selectedPlayerId === playerId;
   const totalRebounds = stats.offensiveRebounds + stats.defensiveRebounds;
+  const theme = getTeamTheme(teamColor);
 
   return (
     <button
       className={cn(
         "flex w-full flex-col rounded-xl border bg-background p-3 text-left transition-all",
         "hover:bg-muted/40 hover:shadow-sm",
-        isSelected
-          ? cn("ring-2 shadow-md", accentRing[accent])
-          : "border-border/80",
+        isSelected ? "shadow-md" : "border-border/80",
+        isBusy && "pointer-events-none opacity-60",
       )}
+      disabled={isBusy}
       onClick={() => selectPlayer(isSelected ? null : playerId)}
+      style={
+        isSelected
+          ? {
+              borderColor: theme.color,
+              boxShadow: `0 0 0 2px ${theme.color}`,
+            }
+          : undefined
+      }
       type="button"
     >
       <div className="flex items-center gap-3">
         <div
-          className={cn(
-            "flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold",
-            accentJersey[accent],
-          )}
+          className="flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+          style={{ backgroundColor: theme.color }}
         >
           {number}
         </div>

@@ -14,6 +14,7 @@ export const teams = pgTable(teamsTable, ({ text, integer }) => ({
     onDelete: "cascade",
   }),
   name: text("name"),
+  color: text("color").notNull().default("#2563eb"),
   ...timestamps,
   ...auditColumns,
 }));

@@ -1,49 +1,30 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
-import { Clock, History, Undo2 } from "lucide-react";
+import { Clock, History, Loader2, Undo2 } from "lucide-react";
 
 import { formatPeriodLabel } from "@/components/statsheet/statsheet-labels";
+import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import { getStatButtonConfig } from "@/components/statsheet/statsheet-stat-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { StatsheetEventLogEntry } from "@/stores/use-statsheet-store";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
-import { useTRPC } from "@/trpc/client";
-
-type StatsheetEventLogProps = {
-  gameId: number;
-};
 
 function StatsheetEventLogRow({
   entry,
-  gameId,
   teamName,
 }: {
   entry: StatsheetEventLogEntry;
-  gameId: number;
   teamName: (teamId: number) => string;
 }) {
-  const trpc = useTRPC();
-  const hydrate = useStatsheetStore((state) => state.hydrate);
   const undoPending = useStatsheetStore((state) => state.undoPending);
+  const { isBusy, isUndoing, undoingEventId, undoEvent, error } =
+    useStatsheetMutations();
   const config = getStatButtonConfig(entry.eventType);
   const Icon = config?.icon;
-
-  const reverseMutation = useMutation(
-    trpc.statsheet.reverse.mutationOptions({
-      onSuccess: (snapshot) => {
-        hydrate({
-          game: snapshot.game,
-          rosters: snapshot.rosters,
-          playerStats: snapshot.playerStats,
-          teamPeriodStats: snapshot.teamPeriodStats,
-          events: snapshot.events,
-        });
-      },
-    }),
-  );
+  const isUndoingThisRow =
+    isUndoing && entry.id != null && undoingEventId === entry.id;
 
   function handleUndo() {
     if (!entry.canUndo) return;
@@ -55,10 +36,7 @@ function StatsheetEventLogRow({
 
     if (entry.id == null) return;
 
-    reverseMutation.mutate({
-      gameId,
-      eventId: entry.id,
-    });
+    undoEvent(entry.id);
   }
 
   return (
@@ -96,14 +74,18 @@ function StatsheetEventLogRow({
             {entry.canUndo ? (
               <Button
                 className="size-7"
-                disabled={reverseMutation.isPending}
+                disabled={isBusy}
                 onClick={handleUndo}
                 size="icon"
                 title="Undo"
                 type="button"
                 variant="ghost"
               >
-                <Undo2 className="size-3.5" />
+                {isUndoingThisRow ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Undo2 className="size-3.5" />
+                )}
               </Button>
             ) : null}
           </div>
@@ -117,10 +99,8 @@ function StatsheetEventLogRow({
             second: "2-digit",
           })}
         </p>
-        {reverseMutation.error ? (
-          <p className="mt-1 text-xs text-destructive">
-            {reverseMutation.error.message}
-          </p>
+        {isUndoingThisRow && error ? (
+          <p className="mt-1 text-xs text-destructive">{error.message}</p>
         ) : null}
       </div>
     </div>
@@ -141,7 +121,7 @@ function statCategoryChip(
   return chips[category] ?? "bg-muted text-muted-foreground";
 }
 
-export function StatsheetEventLog({ gameId }: StatsheetEventLogProps) {
+export function StatsheetEventLog() {
   const eventLog = useStatsheetStore((state) => state.eventLog);
   const game = useStatsheetStore((state) => state.game);
 
@@ -175,7 +155,6 @@ export function StatsheetEventLog({ gameId }: StatsheetEventLogProps) {
           eventLog.map((entry) => (
             <StatsheetEventLogRow
               entry={entry}
-              gameId={gameId}
               key={entry.clientId}
               teamName={teamName}
             />

@@ -26,6 +26,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 import { useTRPC } from "@/trpc/client";
 
@@ -41,11 +42,13 @@ type FormValues = z.infer<typeof formSchema>;
 type AddGuestPlayerDialogProps = {
   gameId: number;
   teamId: number;
+  disabled?: boolean;
 };
 
 export function AddGuestPlayerDialog({
   gameId,
   teamId,
+  disabled = false,
 }: AddGuestPlayerDialogProps) {
   const trpc = useTRPC();
   const hydrate = useStatsheetStore((state) => state.hydrate);
@@ -109,9 +112,18 @@ export function AddGuestPlayerDialog({
   }
 
   return (
-    <Dialog onOpenChange={setOpen} open={open}>
+    <Dialog
+      onOpenChange={guardDialogOpenChange(addGuestMutation.isPending, setOpen)}
+      open={open}
+    >
       <DialogTrigger asChild>
-        <Button className="h-8 gap-1.5" size="sm" type="button" variant="ghost">
+        <Button
+          className="h-8 gap-1.5"
+          disabled={disabled}
+          size="sm"
+          type="button"
+          variant="ghost"
+        >
           <UserPlus className="size-3.5" />
           Add guest
         </Button>

@@ -11,6 +11,11 @@ import {
   auditInsert,
   auditUpdate,
 } from "../lib/access";
+import {
+  DEFAULT_TEAM_COLOR,
+  normalizeTeamColor,
+  teamColorSchema,
+} from "../lib/team-colors";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const leagueIdInput = z.object({
@@ -20,6 +25,7 @@ const leagueIdInput = z.object({
 const createTeamInput = z.object({
   leagueId: z.number().int().positive(),
   name: z.string().trim().min(1, "Team name is required"),
+  color: teamColorSchema.default(DEFAULT_TEAM_COLOR),
 });
 
 const teamIdInput = z.object({
@@ -29,6 +35,7 @@ const teamIdInput = z.object({
 const updateTeamInput = z.object({
   id: z.number().int().positive(),
   name: z.string().trim().min(1, "Team name is required"),
+  color: teamColorSchema,
 });
 
 export const teamsRouter = createTRPCRouter({
@@ -41,6 +48,7 @@ export const teamsRouter = createTRPCRouter({
         .select({
           id: teams.id,
           name: teams.name,
+          color: teams.color,
           leagueId: teams.leagueId,
           createdAt: teams.createdAt,
           playerCount: count(players.id),
@@ -60,6 +68,7 @@ export const teamsRouter = createTRPCRouter({
       return rows.map((row) => ({
         id: row.id,
         name: row.name,
+        color: row.color,
         leagueId: row.leagueId,
         createdAt: row.createdAt,
         playerCount: Number(row.playerCount),
@@ -76,11 +85,13 @@ export const teamsRouter = createTRPCRouter({
         .values({
           leagueId: input.leagueId,
           name: input.name,
+          color: normalizeTeamColor(input.color),
           ...auditInsert(ctx.session.user.id),
         })
         .returning({
           id: teams.id,
           name: teams.name,
+          color: teams.color,
           leagueId: teams.leagueId,
           createdAt: teams.createdAt,
         });
@@ -107,12 +118,14 @@ export const teamsRouter = createTRPCRouter({
         .update(teams)
         .set({
           name: input.name,
+          color: normalizeTeamColor(input.color),
           ...auditUpdate(ctx.session.user.id),
         })
         .where(and(eq(teams.id, input.id), isNull(teams.deletedAt)))
         .returning({
           id: teams.id,
           name: teams.name,
+          color: teams.color,
           leagueId: teams.leagueId,
           createdAt: teams.createdAt,
         });

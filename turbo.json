@@ -1,7 +1,15 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
-  "globalEnv": ["AUTH_SECRET", "AUTH_URL", "DATABASE_URL", "NODE_ENV"],
+  "globalEnv": [
+    "AUTH_SECRET",
+    "AUTH_URL",
+    "DATABASE_URL",
+    "NODE_ENV",
+    "SEED_LEAGUE_NAME",
+    "SEED_USER_EMAIL",
+    "SEED_USER_PASSWORD"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -25,6 +33,9 @@
       "cache": false
     },
     "db:migrate": {
+      "cache": false
+    },
+    "db:seed": {
       "cache": false
     },
     "db:push": {

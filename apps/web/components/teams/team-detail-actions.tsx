@@ -13,6 +13,7 @@ type TeamDetailActionsProps = {
   teamId: number;
   leagueId: number;
   teamName: string;
+  teamColor: string;
   playerCount: number;
   maxPlayers: number;
 };
@@ -21,6 +22,7 @@ export function TeamDetailActions({
   teamId,
   leagueId,
   teamName,
+  teamColor,
   playerCount,
   maxPlayers,
 }: TeamDetailActionsProps) {
@@ -56,6 +58,7 @@ export function TeamDetailActions({
         Delete
       </Button>
       <EditTeamDialog
+        defaultColor={teamColor}
         defaultName={teamName}
         leagueId={leagueId}
         onOpenChange={setEditOpen}

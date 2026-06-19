@@ -5,53 +5,38 @@ import { Flag, Timer, Users } from "lucide-react";
 import { zeroPlayerStatDeltas } from "@repo/shared";
 
 import { AddGuestPlayerDialog } from "@/components/statsheet/add-guest-player-dialog";
+import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import { StatsheetPlayerCard } from "@/components/statsheet/statsheet-player-card";
 import { Button } from "@/components/ui/button";
+import { getTeamTheme } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
-
-type TeamAccent = "away" | "home";
-
-const accentStyles: Record<
-  TeamAccent,
-  { border: string; header: string; badge: string; score: string }
-> = {
-  away: {
-    border: "border-blue-500/30",
-    header: "bg-blue-500/10",
-    badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
-    score: "text-blue-600 dark:text-blue-400",
-  },
-  home: {
-    border: "border-orange-500/30",
-    header: "bg-orange-500/10",
-    badge: "bg-orange-500/15 text-orange-700 dark:text-orange-300",
-    score: "text-orange-600 dark:text-orange-400",
-  },
-};
 
 type StatsheetTeamColumnProps = {
   gameId: number;
   teamId: number;
   teamName: string;
+  teamColor: string;
+  sideLabel: "Away" | "Home";
   score: number;
-  accent: TeamAccent;
 };
 
 export function StatsheetTeamColumn({
   gameId,
   teamId,
   teamName,
+  teamColor,
+  sideLabel,
   score,
-  accent,
 }: StatsheetTeamColumnProps) {
   const rosters = useStatsheetStore((state) => state.rosters);
   const playerStats = useStatsheetStore((state) => state.playerStats);
   const teamPeriodStats = useStatsheetStore((state) => state.teamPeriodStats);
   const currentPeriod = useStatsheetStore((state) => state.currentPeriod);
   const applyTimeout = useStatsheetStore((state) => state.applyTimeout);
+  const { isBusy } = useStatsheetMutations();
 
-  const styles = accentStyles[accent];
+  const theme = getTeamTheme(teamColor);
   const teamPlayers = rosters.filter(
     (row) => row.teamId === teamId && !row.isDnp,
   );
@@ -65,27 +50,29 @@ export function StatsheetTeamColumn({
     <div
       className={cn(
         "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border-2 bg-card shadow-sm",
-        styles.border,
       )}
+      style={{ borderColor: theme.borderColor }}
     >
-      <div className={cn("shrink-0 border-b p-4", styles.header)}>
+      <div
+        className="shrink-0 border-b p-4"
+        style={{ backgroundColor: theme.headerBackground }}
+      >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <span
-              className={cn(
-                "inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
-                styles.badge,
-              )}
+              className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+              style={{
+                backgroundColor: theme.badgeBackground,
+                color: theme.color,
+              }}
             >
-              {accent}
+              {sideLabel}
             </span>
             <h2 className="mt-1 truncate text-lg font-semibold">{teamName}</h2>
           </div>
           <p
-            className={cn(
-              "text-4xl font-bold tabular-nums leading-none",
-              styles.score,
-            )}
+            className="text-4xl font-bold tabular-nums leading-none"
+            style={{ color: theme.color }}
           >
             {score}
           </p>
@@ -104,6 +91,7 @@ export function StatsheetTeamColumn({
           </div>
           <Button
             className="ml-auto h-8 gap-1.5"
+            disabled={isBusy}
             onClick={() => applyTimeout(teamId)}
             size="sm"
             type="button"
@@ -120,19 +108,23 @@ export function StatsheetTeamColumn({
           <Users className="size-3.5" />
           {teamPlayers.length} active
         </div>
-        <AddGuestPlayerDialog gameId={gameId} teamId={teamId} />
+        <AddGuestPlayerDialog
+          disabled={isBusy}
+          gameId={gameId}
+          teamId={teamId}
+        />
       </div>
 
       <div className="grid min-h-0 flex-1 gap-2 overflow-y-auto p-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
         {teamPlayers.map((player) => (
           <StatsheetPlayerCard
-            accent={accent}
-            isGuest={player.isGuest}
             key={player.playerId}
             name={`${player.firstName} ${player.lastName}`}
             number={player.number}
             playerId={player.playerId}
             stats={playerStats[player.playerId] ?? zeroPlayerStatDeltas()}
+            teamColor={teamColor}
+            isGuest={player.isGuest}
           />
         ))}
       </div>

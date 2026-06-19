@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useTRPC } from "@/trpc/client";
 
 const formSchema = z.object({
@@ -75,7 +76,13 @@ export function EditLeagueDialog({
   }
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog
+      onOpenChange={guardDialogOpenChange(
+        updateMutation.isPending,
+        onOpenChange,
+      )}
+      open={open}
+    >
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit league</DialogTitle>

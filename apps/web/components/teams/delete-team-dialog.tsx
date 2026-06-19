@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useTRPC } from "@/trpc/client";
 
 type DeleteTeamDialogProps = {
@@ -51,7 +52,13 @@ export function DeleteTeamDialog({
   );
 
   return (
-    <AlertDialog onOpenChange={onOpenChange} open={open}>
+    <AlertDialog
+      onOpenChange={guardDialogOpenChange(
+        deleteMutation.isPending,
+        onOpenChange,
+      )}
+      open={open}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete team?</AlertDialogTitle>

@@ -14,11 +14,13 @@
     "db:generate": "tsx scripts/sync-schema-index.ts && drizzle-kit generate",
     "schema:sync": "tsx scripts/sync-schema-index.ts",
     "db:migrate": "tsx src/migrate.ts",
+    "db:seed": "tsx src/seed.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@repo/shared": "*",
+    "bcryptjs": "^3.0.2",
     "drizzle-orm": "^0.44.2",
     "postgres": "^3.4.7"
   },

@@ -37,6 +37,8 @@ export type StatsheetGame = {
   secondTeamId: number | null;
   firstTeamName: string | null;
   secondTeamName: string | null;
+  firstTeamColor: string;
+  secondTeamColor: string;
   type: string;
   status: GameStatus;
   currentPeriod: GamePeriod | null;
