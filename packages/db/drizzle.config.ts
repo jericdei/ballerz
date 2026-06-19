@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { config } from "dotenv";
+import { defineConfig } from "drizzle-kit";
 
 const rootDir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -11,9 +12,11 @@ const rootDir = path.resolve(
 config({ path: path.join(rootDir, ".env") });
 config({ path: path.join(rootDir, ".env.local") });
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  transpilePackages: ["@repo/db"],
-};
-
-export default nextConfig;
+export default defineConfig({
+  schema: "./src/schema/index.ts",
+  out: "./drizzle",
+  dialect: "postgresql",
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+});

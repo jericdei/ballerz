@@ -1,4 +1,5 @@
 import Image, { type ImageProps } from "next/image";
+
 import styles from "@/app/page.module.css";
 
 type Props = Omit<ImageProps, "src"> & {
