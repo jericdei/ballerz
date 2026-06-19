@@ -10,8 +10,9 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix --max-warnings 0",
-    "check-types": "tsc --noEmit",
-    "db:generate": "drizzle-kit generate",
+    "check-types": "tsx scripts/sync-schema-index.ts && tsc --noEmit",
+    "db:generate": "tsx scripts/sync-schema-index.ts && drizzle-kit generate",
+    "schema:sync": "tsx scripts/sync-schema-index.ts",
     "db:migrate": "tsx src/migrate.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
