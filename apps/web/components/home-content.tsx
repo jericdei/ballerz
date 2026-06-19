@@ -3,6 +3,7 @@
 import { signOut, useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 
+import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/stores/use-app-store";
 import { useTRPC } from "@/trpc/client";
@@ -23,13 +24,16 @@ export function HomeContent() {
             Live basketball statsheet recorder
           </p>
         </div>
-        <Button
-          onClick={() => signOut({ redirectTo: "/login" })}
-          type="button"
-          variant="outline"
-        >
-          Sign out
-        </Button>
+        <div className="flex items-center gap-2">
+          <ModeToggle />
+          <Button
+            onClick={() => signOut({ redirectTo: "/login" })}
+            type="button"
+            variant="outline"
+          >
+            Sign out
+          </Button>
+        </div>
       </div>
 
       <section className="space-y-3 rounded-lg border p-4">
