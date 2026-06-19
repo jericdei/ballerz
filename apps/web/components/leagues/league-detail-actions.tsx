@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 import { DeleteLeagueDialog } from "@/components/leagues/delete-league-dialog";
 import { EditLeagueDialog } from "@/components/leagues/edit-league-dialog";
-import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
 import { Button } from "@/components/ui/button";
 
 type LeagueDetailActionsProps = {
@@ -23,7 +22,6 @@ export function LeagueDetailActions({
 
   return (
     <>
-      <CreateTeamDialog leagueId={leagueId} />
       <Button onClick={() => setEditOpen(true)} type="button" variant="outline">
         Edit
       </Button>

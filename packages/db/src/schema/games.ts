@@ -34,6 +34,7 @@ export const games = pgTable(gamesTable, ({ integer }) => ({
   currentPeriod: gamePeriodEnum("current_period"),
   firstTeamScore: integer("first_team_score").notNull().default(0),
   secondTeamScore: integer("second_team_score").notNull().default(0),
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }),
   startedAt: timestamp("started_at", { withTimezone: true }),
   endedAt: timestamp("ended_at", { withTimezone: true }),
   ...timestamps,

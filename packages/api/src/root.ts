@@ -1,4 +1,5 @@
 import { authRouter } from "./routers/auth";
+import { gamesRouter } from "./routers/games";
 import { healthRouter } from "./routers/health";
 import { leaguesRouter } from "./routers/leagues";
 import { playersRouter } from "./routers/players";
@@ -11,6 +12,7 @@ export const appRouter = createTRPCRouter({
   leagues: leaguesRouter,
   teams: teamsRouter,
   players: playersRouter,
+  games: gamesRouter,
 });
 
 export type AppRouter = typeof appRouter;

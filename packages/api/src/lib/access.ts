@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
-import { db, leagues, players, teams } from "@repo/db";
+import { db, games, leagues, players, teams } from "@repo/db";
 
 export function auditInsert(userId: number) {
   return {
@@ -113,4 +113,71 @@ export async function assertPlayerOwner(playerId: number, userId: number) {
   }
 
   return player;
+}
+
+export async function assertGameOwner(gameId: number, userId: number) {
+  const [game] = await db
+    .select({
+      id: games.id,
+      leagueId: games.leagueId,
+      firstTeamId: games.firstTeamId,
+      secondTeamId: games.secondTeamId,
+      type: games.type,
+      status: games.status,
+      firstTeamScore: games.firstTeamScore,
+      secondTeamScore: games.secondTeamScore,
+      scheduledAt: games.scheduledAt,
+      createdAt: games.createdAt,
+    })
+    .from(games)
+    .innerJoin(leagues, eq(games.leagueId, leagues.id))
+    .where(
+      and(
+        eq(games.id, gameId),
+        eq(leagues.createdBy, userId),
+        isNull(games.deletedAt),
+        isNull(leagues.deletedAt),
+      ),
+    )
+    .limit(1);
+
+  if (!game) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Game not found",
+    });
+  }
+
+  return game;
+}
+
+export async function assertDistinctTeamsInLeague(
+  leagueId: number,
+  firstTeamId: number,
+  secondTeamId: number,
+) {
+  if (firstTeamId === secondTeamId) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Teams must be different",
+    });
+  }
+
+  const teamRows = await db
+    .select({ id: teams.id })
+    .from(teams)
+    .where(
+      and(
+        eq(teams.leagueId, leagueId),
+        isNull(teams.deletedAt),
+        inArray(teams.id, [firstTeamId, secondTeamId]),
+      ),
+    );
+
+  if (teamRows.length !== 2) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Both teams must belong to this league",
+    });
+  }
 }
