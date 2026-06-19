@@ -1,5 +1,6 @@
 "use client";
 
+import { signOut, useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { useAppStore } from "@/stores/use-app-store";
 import { useTRPC } from "@/trpc/client";
 
 export function HomeContent() {
+  const { data: session } = useSession();
   const trpc = useTRPC();
   const healthQuery = useQuery(trpc.health.ping.queryOptions());
   const sidebarOpen = useAppStore((state) => state.sidebarOpen);
@@ -14,12 +16,31 @@ export function HomeContent() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-8 p-8">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Ballerz</h1>
-        <p className="text-muted-foreground">
-          Live basketball statsheet recorder
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold tracking-tight">Ballerz</h1>
+          <p className="text-muted-foreground">
+            Live basketball statsheet recorder
+          </p>
+        </div>
+        <Button
+          onClick={() => signOut({ redirectTo: "/login" })}
+          type="button"
+          variant="outline"
+        >
+          Sign out
+        </Button>
       </div>
+
+      <section className="space-y-3 rounded-lg border p-4">
+        <h2 className="font-medium">Session</h2>
+        <p className="text-sm text-muted-foreground">
+          Signed in as{" "}
+          <span className="font-medium text-foreground">
+            {session?.user?.email ?? "Unknown user"}
+          </span>
+        </p>
+      </section>
 
       <section className="space-y-3 rounded-lg border p-4">
         <h2 className="font-medium">tRPC + TanStack Query</h2>
