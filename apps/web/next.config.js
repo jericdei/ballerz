@@ -13,7 +13,7 @@ config({ path: path.join(rootDir, ".env.local") });
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@repo/db"],
+  transpilePackages: ["@repo/db", "@repo/api"],
 };
 
 export default nextConfig;
