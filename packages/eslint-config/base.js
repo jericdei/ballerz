@@ -29,4 +29,21 @@ export const config = [
   {
     ignores: ["dist/**"],
   },
+  {
+    files: ["**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              regex: "^\\.",
+              message:
+                "Relative imports are not allowed. Use path aliases (e.g. @/...) instead.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
