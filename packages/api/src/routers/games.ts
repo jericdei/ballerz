@@ -14,10 +14,12 @@ import {
   auditUpdate,
 } from "../lib/access";
 import {
+  GAME_PERIODS,
   GAME_STATUSES,
   GAME_TYPES,
   MIN_TEAMS_PER_LEAGUE,
 } from "../lib/constants";
+import { bootstrapGameRosters } from "../lib/game-rosters";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const firstTeam = alias(teams, "first_team");
@@ -59,6 +61,88 @@ const updateGameInput = z.object({
 
 const editableTeamStatuses = new Set(["scheduled", "cancelled"]);
 
+const quickStartInput = z.object({
+  leagueId: z.number().int().positive(),
+  firstTeamId: z.number().int().positive(),
+  secondTeamId: z.number().int().positive(),
+  type: gameTypeSchema.optional().default("regular"),
+});
+
+function mapGameDetail(row: {
+  id: number;
+  leagueId: number | null;
+  firstTeamId: number | null;
+  secondTeamId: number | null;
+  firstTeamName: string | null;
+  secondTeamName: string | null;
+  type: (typeof GAME_TYPES)[number];
+  status: (typeof GAME_STATUSES)[number];
+  currentPeriod: (typeof GAME_PERIODS)[number] | null;
+  firstTeamScore: number;
+  secondTeamScore: number;
+  scheduledAt: Date | null;
+  startedAt: Date | null;
+  endedAt: Date | null;
+  createdAt: Date;
+}) {
+  return {
+    id: row.id,
+    leagueId: row.leagueId,
+    firstTeamId: row.firstTeamId,
+    secondTeamId: row.secondTeamId,
+    firstTeamName: row.firstTeamName,
+    secondTeamName: row.secondTeamName,
+    type: row.type,
+    status: row.status,
+    currentPeriod: row.currentPeriod,
+    firstTeamScore: row.firstTeamScore,
+    secondTeamScore: row.secondTeamScore,
+    scheduledAt: row.scheduledAt,
+    startedAt: row.startedAt,
+    endedAt: row.endedAt,
+    createdAt: row.createdAt,
+  };
+}
+
+async function startGame(gameId: number, userId: number) {
+  const game = await assertGameOwner(gameId, userId);
+
+  if (game.status !== "scheduled" && game.status !== "cancelled") {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Only scheduled games can be started",
+    });
+  }
+
+  if (game.firstTeamId == null || game.secondTeamId == null) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Game teams are missing",
+    });
+  }
+
+  await bootstrapGameRosters(
+    gameId,
+    game.firstTeamId,
+    game.secondTeamId,
+    userId,
+  );
+
+  const now = new Date();
+
+  await db
+    .update(games)
+    .set({
+      status: "in_progress",
+      currentPeriod: "q1",
+      startedAt: now,
+      ...auditUpdate(userId),
+    })
+    .where(and(eq(games.id, gameId), isNull(games.deletedAt)));
+
+  return { id: gameId };
+}
+
 function mapGameRow(row: {
   id: number;
   leagueId: number | null;
@@ -87,6 +171,34 @@ function mapGameRow(row: {
     scheduledAt: row.scheduledAt,
     createdAt: row.createdAt,
   };
+}
+
+async function fetchGameDetail(gameId: number) {
+  const [row] = await db
+    .select({
+      id: games.id,
+      leagueId: games.leagueId,
+      firstTeamId: games.firstTeamId,
+      secondTeamId: games.secondTeamId,
+      firstTeamName: firstTeam.name,
+      secondTeamName: secondTeam.name,
+      type: games.type,
+      status: games.status,
+      currentPeriod: games.currentPeriod,
+      firstTeamScore: games.firstTeamScore,
+      secondTeamScore: games.secondTeamScore,
+      scheduledAt: games.scheduledAt,
+      startedAt: games.startedAt,
+      endedAt: games.endedAt,
+      createdAt: games.createdAt,
+    })
+    .from(games)
+    .innerJoin(firstTeam, eq(games.firstTeamId, firstTeam.id))
+    .innerJoin(secondTeam, eq(games.secondTeamId, secondTeam.id))
+    .where(and(eq(games.id, gameId), isNull(games.deletedAt)))
+    .limit(1);
+
+  return row ? mapGameDetail(row) : null;
 }
 
 export const gamesRouter = createTRPCRouter({
@@ -282,6 +394,63 @@ export const gamesRouter = createTRPCRouter({
       }
 
       return mapGameRow(row);
+    }),
+
+  getById: protectedProcedure
+    .input(gameIdInput)
+    .query(async ({ ctx, input }) => {
+      await assertGameOwner(input.id, ctx.session.user.id);
+
+      const game = await fetchGameDetail(input.id);
+
+      if (!game) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Game not found",
+        });
+      }
+
+      return game;
+    }),
+
+  start: protectedProcedure
+    .input(gameIdInput)
+    .mutation(async ({ ctx, input }) => {
+      return startGame(input.id, ctx.session.user.id);
+    }),
+
+  quickStart: protectedProcedure
+    .input(quickStartInput)
+    .mutation(async ({ ctx, input }) => {
+      await assertLeagueOwner(input.leagueId, ctx.session.user.id);
+      await assertDistinctTeamsInLeague(
+        input.leagueId,
+        input.firstTeamId,
+        input.secondTeamId,
+      );
+
+      const [game] = await db
+        .insert(games)
+        .values({
+          leagueId: input.leagueId,
+          firstTeamId: input.firstTeamId,
+          secondTeamId: input.secondTeamId,
+          type: input.type,
+          scheduledAt: new Date(),
+          ...auditInsert(ctx.session.user.id),
+        })
+        .returning({ id: games.id });
+
+      if (!game) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create game",
+        });
+      }
+
+      await startGame(game.id, ctx.session.user.id);
+
+      return { id: game.id, leagueId: input.leagueId };
     }),
 
   delete: protectedProcedure

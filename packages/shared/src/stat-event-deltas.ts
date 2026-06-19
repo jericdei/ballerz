@@ -1,4 +1,4 @@
-import type { GameStatEventType } from "../schema/game-enums";
+import type { GameStatEventType } from "./stat-enums";
 
 export type PlayerStatDeltas = {
   fg2Made: number;
@@ -13,6 +13,8 @@ export type PlayerStatDeltas = {
   defensiveRebounds: number;
   personalFouls: number;
   technicalFouls: number;
+  steals: number;
+  blocks: number;
   points: number;
 };
 
@@ -46,17 +48,14 @@ const zeroPlayerStats = (): PlayerStatDeltas => ({
   defensiveRebounds: 0,
   personalFouls: 0,
   technicalFouls: 0,
+  steals: 0,
+  blocks: 0,
   points: 0,
 });
 
 const zeroTeamPeriod = (): TeamPeriodDeltas => ({
   timeoutsUsed: 0,
   teamFouls: 0,
-});
-
-const zeroScore = (): ScoreDelta => ({
-  firstTeam: 0,
-  secondTeam: 0,
 });
 
 function scalePlayerStats(
@@ -76,6 +75,8 @@ function scalePlayerStats(
     defensiveRebounds: stats.defensiveRebounds * multiplier,
     personalFouls: stats.personalFouls * multiplier,
     technicalFouls: stats.technicalFouls * multiplier,
+    steals: stats.steals * multiplier,
+    blocks: stats.blocks * multiplier,
     points: stats.points * multiplier,
   };
 }
@@ -187,6 +188,18 @@ const baseEffects: Record<GameStatEventType, StatEventEffects> = {
     score: null,
     marksDnp: false,
   },
+  steal: {
+    playerStats: { ...zeroPlayerStats(), steals: 1 },
+    teamPeriod: null,
+    score: null,
+    marksDnp: false,
+  },
+  block: {
+    playerStats: { ...zeroPlayerStats(), blocks: 1 },
+    teamPeriod: null,
+    score: null,
+    marksDnp: false,
+  },
   timeout: {
     playerStats: null,
     teamPeriod: { ...zeroTeamPeriod(), timeoutsUsed: 1 },
@@ -206,7 +219,7 @@ export function getStatEventEffects(
   options: { isFirstTeam: boolean; multiplier?: number },
 ): StatEventEffects {
   const multiplier = options.multiplier ?? 1;
-  const base = baseEffects[eventType];
+  const base = baseEffects[eventType]!;
   const playerStats = base.playerStats
     ? scalePlayerStats(base.playerStats, multiplier)
     : null;
@@ -246,6 +259,16 @@ export function addPlayerStats(
     defensiveRebounds: current.defensiveRebounds + delta.defensiveRebounds,
     personalFouls: current.personalFouls + delta.personalFouls,
     technicalFouls: current.technicalFouls + delta.technicalFouls,
+    steals: current.steals + delta.steals,
+    blocks: current.blocks + delta.blocks,
     points: current.points + delta.points,
   };
+}
+
+export function zeroPlayerStatDeltas(): PlayerStatDeltas {
+  return zeroPlayerStats();
+}
+
+export function zeroTeamPeriodDeltas(): TeamPeriodDeltas {
+  return zeroTeamPeriod();
 }

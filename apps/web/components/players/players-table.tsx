@@ -27,6 +27,11 @@ export function PlayersTable({ data, teamId }: PlayersTableProps) {
     {
       accessorKey: "number",
       header: "#",
+      cell: ({ row }) => (
+        <span className="inline-flex size-8 items-center justify-center rounded-full bg-violet-600 text-sm font-bold text-white dark:bg-violet-500">
+          {row.original.number}
+        </span>
+      ),
     },
     {
       id: "name",
@@ -43,7 +48,9 @@ export function PlayersTable({ data, teamId }: PlayersTableProps) {
       header: "Captain",
       cell: ({ row }) =>
         row.original.isCaptain ? (
-          <Badge variant="secondary">Captain</Badge>
+          <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
+            Captain
+          </Badge>
         ) : (
           "—"
         ),

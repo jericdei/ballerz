@@ -30,6 +30,8 @@ export const gamePlayerStats = pgTable(
     defensiveRebounds: intCol("defensive_rebounds").notNull().default(0),
     personalFouls: intCol("personal_fouls").notNull().default(0),
     technicalFouls: intCol("technical_fouls").notNull().default(0),
+    steals: intCol("steals").notNull().default(0),
+    blocks: intCol("blocks").notNull().default(0),
     points: intCol("points").notNull().default(0),
     ...timestamps,
   }),

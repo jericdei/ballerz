@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,8 @@ export function CreatePlayerDialog({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button disabled={isFull} type="button">
+        <Button className="gap-1.5" disabled={isFull} size="sm" type="button">
+          <Plus className="size-4" />
           Add player
         </Button>
       </DialogTrigger>

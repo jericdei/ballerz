@@ -33,6 +33,8 @@ export const gameStatEventTypeEnum = pgEnum("game_stat_event_type", [
   "defensive_rebound",
   "personal_foul",
   "technical_foul",
+  "steal",
+  "block",
   "timeout",
   "dnp_marked",
 ]);

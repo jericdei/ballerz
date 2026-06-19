@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil, Trash2 } from "lucide-react";
 
 import { CreatePlayerDialog } from "@/components/players/create-player-dialog";
 import { DeleteTeamDialog } from "@/components/teams/delete-team-dialog";
@@ -34,14 +35,24 @@ export function TeamDetailActions({
         playerCount={playerCount}
         teamId={teamId}
       />
-      <Button onClick={() => setEditOpen(true)} type="button" variant="outline">
-        Edit
-      </Button>
       <Button
-        onClick={() => setDeleteOpen(true)}
+        className="gap-1.5"
+        onClick={() => setEditOpen(true)}
+        size="sm"
         type="button"
         variant="outline"
       >
+        <Pencil className="size-3.5" />
+        Edit
+      </Button>
+      <Button
+        className="gap-1.5"
+        onClick={() => setDeleteOpen(true)}
+        size="sm"
+        type="button"
+        variant="outline"
+      >
+        <Trash2 className="size-3.5" />
         Delete
       </Button>
       <EditTeamDialog

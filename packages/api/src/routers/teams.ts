@@ -48,7 +48,11 @@ export const teamsRouter = createTRPCRouter({
         .from(teams)
         .leftJoin(
           players,
-          and(eq(players.teamId, teams.id), isNull(players.deletedAt)),
+          and(
+            eq(players.teamId, teams.id),
+            isNull(players.deletedAt),
+            isNull(players.createdForGameId),
+          ),
         )
         .where(and(eq(teams.leagueId, input.leagueId), isNull(teams.deletedAt)))
         .groupBy(teams.id);
@@ -123,7 +127,13 @@ export const teamsRouter = createTRPCRouter({
       const [result] = await db
         .select({ playerCount: count(players.id) })
         .from(players)
-        .where(and(eq(players.teamId, input.id), isNull(players.deletedAt)));
+        .where(
+          and(
+            eq(players.teamId, input.id),
+            isNull(players.deletedAt),
+            isNull(players.createdForGameId),
+          ),
+        );
 
       return {
         ...updated,

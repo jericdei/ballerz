@@ -1,20 +1,21 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
-import type * as schema from "../schema/index";
-import type { GamePeriod, GameStatEventType } from "../schema/game-enums";
-import { gamePlayerStats } from "../schema/game-player-stats";
-import { gameRosters } from "../schema/game-rosters";
-import { gameStatEvents } from "../schema/game-stat-events";
-import { gameTeamPeriodStats } from "../schema/game-team-period-stats";
-import { games } from "../schema/games";
 import {
   addPlayerStats,
   getStatEventEffects,
   type PlayerStatDeltas,
   type ScoreDelta,
   type TeamPeriodDeltas,
-} from "./stat-event-deltas";
+} from "@repo/shared";
+
+import type { GamePeriod, GameStatEventType } from "../schema/game-enums";
+import { gamePlayerStats } from "../schema/game-player-stats";
+import { gameRosters } from "../schema/game-rosters";
+import { gameStatEvents } from "../schema/game-stat-events";
+import { gameTeamPeriodStats } from "../schema/game-team-period-stats";
+import { games } from "../schema/games";
+import type * as schema from "../schema/index";
 
 type DbClient = PostgresJsDatabase<typeof schema>;
 type DbTransaction = Parameters<Parameters<DbClient["transaction"]>[0]>[0];
@@ -102,6 +103,8 @@ async function applyPlayerStatDeltas(
       defensiveRebounds: delta.defensiveRebounds,
       personalFouls: delta.personalFouls,
       technicalFouls: delta.technicalFouls,
+      steals: delta.steals,
+      blocks: delta.blocks,
       points: delta.points,
     })
     .onConflictDoUpdate({
@@ -119,6 +122,8 @@ async function applyPlayerStatDeltas(
         defensiveRebounds: sql`${gamePlayerStats.defensiveRebounds} + ${delta.defensiveRebounds}`,
         personalFouls: sql`${gamePlayerStats.personalFouls} + ${delta.personalFouls}`,
         technicalFouls: sql`${gamePlayerStats.technicalFouls} + ${delta.technicalFouls}`,
+        steals: sql`${gamePlayerStats.steals} + ${delta.steals}`,
+        blocks: sql`${gamePlayerStats.blocks} + ${delta.blocks}`,
         points: sql`${gamePlayerStats.points} + ${delta.points}`,
         updatedAt: new Date(),
       },
@@ -239,122 +244,128 @@ function assertPlayerRequired(
   }
 }
 
-export async function recordStatEvent(
-  db: DbClient,
+export async function recordStatEventWithExecutor(
+  tx: DbExecutor,
   input: RecordStatEventInput,
 ) {
   assertPlayerRequired(input.eventType, input.playerId);
 
-  return db.transaction(async (tx) => {
-    const teamContext = await getGameTeamContext(
-      tx,
-      input.gameId,
-      input.teamId,
-    );
-    const sequence = await getNextSequence(tx, input.gameId);
-    const playerId = input.playerId ?? null;
+  const teamContext = await getGameTeamContext(tx, input.gameId, input.teamId);
+  const sequence = await getNextSequence(tx, input.gameId);
+  const playerId = input.playerId ?? null;
 
-    const [event] = await tx
-      .insert(gameStatEvents)
-      .values({
-        gameId: input.gameId,
-        sequence,
-        period: input.period,
-        eventType: input.eventType,
-        playerId,
-        teamId: input.teamId,
-        relatedEventId: input.relatedEventId ?? null,
-        recordedBy: input.recordedBy ?? null,
-        occurredAt: input.occurredAt ?? new Date(),
-      })
-      .returning();
-
-    if (!event) {
-      throw new Error("Failed to insert stat event");
-    }
-
-    await applyStatEventEffects(tx, {
+  const [event] = await tx
+    .insert(gameStatEvents)
+    .values({
       gameId: input.gameId,
+      sequence,
       period: input.period,
-      teamId: input.teamId,
-      playerId,
       eventType: input.eventType,
-      isFirstTeam: teamContext.isFirstTeam,
-      multiplier: 1,
-    });
+      playerId,
+      teamId: input.teamId,
+      relatedEventId: input.relatedEventId ?? null,
+      recordedBy: input.recordedBy ?? null,
+      occurredAt: input.occurredAt ?? new Date(),
+    })
+    .returning();
 
-    return event;
+  if (!event) {
+    throw new Error("Failed to insert stat event");
+  }
+
+  await applyStatEventEffects(tx, {
+    gameId: input.gameId,
+    period: input.period,
+    teamId: input.teamId,
+    playerId,
+    eventType: input.eventType,
+    isFirstTeam: teamContext.isFirstTeam,
+    multiplier: 1,
   });
+
+  return event;
+}
+
+export async function recordStatEvent(
+  db: DbClient,
+  input: RecordStatEventInput,
+) {
+  return db.transaction(async (tx) => recordStatEventWithExecutor(tx, input));
+}
+
+export async function reverseStatEventWithExecutor(
+  tx: DbExecutor,
+  input: ReverseStatEventInput,
+) {
+  const [originalEvent] = await tx
+    .select()
+    .from(gameStatEvents)
+    .where(eq(gameStatEvents.id, input.eventId))
+    .limit(1);
+
+  if (!originalEvent) {
+    throw new Error(`Stat event ${input.eventId} not found`);
+  }
+
+  if (originalEvent.reversesEventId != null) {
+    throw new Error(`Stat event ${input.eventId} is itself a reversal`);
+  }
+
+  const [existingReversal] = await tx
+    .select({ id: gameStatEvents.id })
+    .from(gameStatEvents)
+    .where(eq(gameStatEvents.reversesEventId, originalEvent.id))
+    .limit(1);
+
+  if (existingReversal) {
+    throw new Error(`Stat event ${input.eventId} has already been reversed`);
+  }
+
+  const teamContext = await getGameTeamContext(
+    tx,
+    originalEvent.gameId,
+    originalEvent.teamId,
+  );
+  const sequence = await getNextSequence(tx, originalEvent.gameId);
+
+  const [reversalEvent] = await tx
+    .insert(gameStatEvents)
+    .values({
+      gameId: originalEvent.gameId,
+      sequence,
+      period: originalEvent.period,
+      eventType: originalEvent.eventType,
+      playerId: originalEvent.playerId,
+      teamId: originalEvent.teamId,
+      reversesEventId: originalEvent.id,
+      relatedEventId: originalEvent.relatedEventId,
+      recordedBy: input.recordedBy ?? null,
+      occurredAt: input.occurredAt ?? new Date(),
+    })
+    .returning();
+
+  if (!reversalEvent) {
+    throw new Error("Failed to insert reversal event");
+  }
+
+  await applyStatEventEffects(tx, {
+    gameId: originalEvent.gameId,
+    period: originalEvent.period,
+    teamId: originalEvent.teamId,
+    playerId: originalEvent.playerId,
+    eventType: originalEvent.eventType,
+    isFirstTeam: teamContext.isFirstTeam,
+    multiplier: -1,
+  });
+
+  return reversalEvent;
 }
 
 export async function reverseStatEvent(
   db: DbClient,
   input: ReverseStatEventInput,
 ) {
-  return db.transaction(async (tx) => {
-    const [originalEvent] = await tx
-      .select()
-      .from(gameStatEvents)
-      .where(eq(gameStatEvents.id, input.eventId))
-      .limit(1);
-
-    if (!originalEvent) {
-      throw new Error(`Stat event ${input.eventId} not found`);
-    }
-
-    if (originalEvent.reversesEventId != null) {
-      throw new Error(`Stat event ${input.eventId} is itself a reversal`);
-    }
-
-    const [existingReversal] = await tx
-      .select({ id: gameStatEvents.id })
-      .from(gameStatEvents)
-      .where(eq(gameStatEvents.reversesEventId, originalEvent.id))
-      .limit(1);
-
-    if (existingReversal) {
-      throw new Error(`Stat event ${input.eventId} has already been reversed`);
-    }
-
-    const teamContext = await getGameTeamContext(
-      tx,
-      originalEvent.gameId,
-      originalEvent.teamId,
-    );
-    const sequence = await getNextSequence(tx, originalEvent.gameId);
-
-    const [reversalEvent] = await tx
-      .insert(gameStatEvents)
-      .values({
-        gameId: originalEvent.gameId,
-        sequence,
-        period: originalEvent.period,
-        eventType: originalEvent.eventType,
-        playerId: originalEvent.playerId,
-        teamId: originalEvent.teamId,
-        reversesEventId: originalEvent.id,
-        relatedEventId: originalEvent.relatedEventId,
-        recordedBy: input.recordedBy ?? null,
-        occurredAt: input.occurredAt ?? new Date(),
-      })
-      .returning();
-
-    if (!reversalEvent) {
-      throw new Error("Failed to insert reversal event");
-    }
-
-    await applyStatEventEffects(tx, {
-      gameId: originalEvent.gameId,
-      period: originalEvent.period,
-      teamId: originalEvent.teamId,
-      playerId: originalEvent.playerId,
-      eventType: originalEvent.eventType,
-      isFirstTeam: teamContext.isFirstTeam,
-      multiplier: -1,
-    });
-
-    return reversalEvent;
-  });
+  return db.transaction(async (tx) => reverseStatEventWithExecutor(tx, input));
 }
 
 export { addPlayerStats, getStatEventEffects };

@@ -124,9 +124,12 @@ export async function assertGameOwner(gameId: number, userId: number) {
       secondTeamId: games.secondTeamId,
       type: games.type,
       status: games.status,
+      currentPeriod: games.currentPeriod,
       firstTeamScore: games.firstTeamScore,
       secondTeamScore: games.secondTeamScore,
       scheduledAt: games.scheduledAt,
+      startedAt: games.startedAt,
+      endedAt: games.endedAt,
       createdAt: games.createdAt,
     })
     .from(games)

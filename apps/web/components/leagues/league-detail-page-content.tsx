@@ -2,12 +2,23 @@
 
 import { notFound } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import {
+  CalendarDays,
+  CheckCircle2,
+  Shield,
+  Swords,
+  Users,
+} from "lucide-react";
 
 import { MIN_TEAMS_PER_LEAGUE } from "@repo/api/constants";
 
 import { AppShell } from "@/components/app-shell";
+import { CrudPageLoading } from "@/components/crud/crud-page-loading";
+import { CrudPageSection } from "@/components/crud/crud-page-section";
+import { CrudStatCard, CrudStatStrip } from "@/components/crud/crud-stat-card";
 import { CreateGameDialog } from "@/components/games/create-game-dialog";
 import { GamesTable } from "@/components/games/games-table";
+import { QuickStartGameDialog } from "@/components/games/quick-start-game-dialog";
 import { LeagueDetailActions } from "@/components/leagues/league-detail-actions";
 import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
 import { TeamsTable } from "@/components/teams/teams-table";
@@ -41,6 +52,9 @@ export function LeagueDetailPageContent({
   const games = gamesQuery.data ?? [];
   const isLoading =
     leagueQuery.isLoading || teamsQuery.isLoading || gamesQuery.isLoading;
+  const liveGames = games.filter(
+    (game) => game.status === "in_progress" || game.status === "halftime",
+  ).length;
 
   return (
     <AppShell
@@ -61,57 +75,90 @@ export function LeagueDetailPageContent({
           ? `${league.teamCount} team${league.teamCount === 1 ? "" : "s"} · ${games.length} game${games.length === 1 ? "" : "s"}`
           : undefined
       }
+      layout="wide"
       title={league?.name ?? "League"}
     >
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading league...</p>
+        <CrudPageLoading message="Loading league..." />
       ) : league ? (
-        <div className="space-y-8">
-          <div className="flex items-center gap-2">
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center gap-2">
             {league.isReady ? (
-              <Badge variant="secondary">Ready for games</Badge>
+              <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                Ready for games
+              </Badge>
             ) : (
-              <Badge variant="outline">
+              <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
                 Needs {MIN_TEAMS_PER_LEAGUE}+ teams
               </Badge>
             )}
           </div>
 
-          <section className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold tracking-tight">Teams</h2>
-                <p className="text-sm text-muted-foreground">
-                  Manage teams in this league.
-                </p>
-              </div>
-              <CreateTeamDialog leagueId={leagueId} />
-            </div>
-            <TeamsTable data={teams} leagueId={leagueId} />
-          </section>
+          <CrudStatStrip>
+            <CrudStatCard
+              accent="blue"
+              icon={Shield}
+              label="Teams"
+              value={league.teamCount}
+            />
+            <CrudStatCard
+              accent="orange"
+              icon={CalendarDays}
+              label="Games"
+              value={games.length}
+            />
+            <CrudStatCard
+              accent="emerald"
+              icon={Swords}
+              label="Live now"
+              value={liveGames}
+            />
+            <CrudStatCard
+              accent="violet"
+              icon={CheckCircle2}
+              label="Roster slots"
+              value={teams.reduce((sum, team) => sum + team.playerCount, 0)}
+            />
+          </CrudStatStrip>
 
-          <section className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold tracking-tight">Games</h2>
-                <p className="text-sm text-muted-foreground">
-                  Schedule and manage matchups.
-                </p>
+          <CrudPageSection
+            accent="blue"
+            actions={<CreateTeamDialog leagueId={leagueId} />}
+            description="Add teams and open rosters to manage players."
+            icon={Users}
+            title="Teams"
+          >
+            <TeamsTable data={teams} leagueId={leagueId} />
+          </CrudPageSection>
+
+          <CrudPageSection
+            accent="orange"
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <CreateGameDialog
+                  disabled={!league.isReady}
+                  leagueId={leagueId}
+                  teams={teams}
+                />
+                <QuickStartGameDialog
+                  disabled={!league.isReady}
+                  leagueId={leagueId}
+                  teams={teams}
+                />
               </div>
-              <CreateGameDialog
-                disabled={!league.isReady}
-                leagueId={leagueId}
-                teams={teams}
-              />
-            </div>
+            }
+            description="Schedule matchups or quick-start a live statsheet."
+            icon={CalendarDays}
+            title="Games"
+          >
             {!league.isReady ? (
-              <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              <p className="mb-4 rounded-xl border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
                 Add at least {MIN_TEAMS_PER_LEAGUE} teams before scheduling
                 games.
               </p>
             ) : null}
             <GamesTable data={games} leagueId={leagueId} teams={teams} />
-          </section>
+          </CrudPageSection>
         </div>
       ) : null}
     </AppShell>

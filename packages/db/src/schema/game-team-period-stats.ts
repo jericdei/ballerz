@@ -1,5 +1,5 @@
-import { index, integer, pgTable, uniqueIndex } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+import { index, pgTable, uniqueIndex } from "drizzle-orm/pg-core";
 
 import { idColumn, timestamps } from "./columns";
 import { gamePeriodEnum } from "./game-enums";

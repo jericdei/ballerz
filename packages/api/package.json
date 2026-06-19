@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@repo/db": "*",
+    "@repo/shared": "*",
     "@trpc/server": "^11.4.3",
     "bcryptjs": "^3.0.2",
     "drizzle-orm": "^0.44.2",

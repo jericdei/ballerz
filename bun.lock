@@ -17,6 +17,7 @@
         "@hookform/resolvers": "^5.4.0",
         "@repo/api": "*",
         "@repo/db": "*",
+        "@repo/shared": "*",
         "@tanstack/react-query": "^5.83.0",
         "@tanstack/react-table": "^8.21.3",
         "@trpc/client": "^11.4.3",
@@ -57,6 +58,7 @@
       "version": "0.0.0",
       "dependencies": {
         "@repo/db": "*",
+        "@repo/shared": "*",
         "@trpc/server": "^11.4.3",
         "bcryptjs": "^3.0.2",
         "drizzle-orm": "^0.44.2",
@@ -76,6 +78,7 @@
       "name": "@repo/db",
       "version": "0.0.0",
       "dependencies": {
+        "@repo/shared": "*",
         "drizzle-orm": "^0.44.2",
         "postgres": "^3.4.7",
       },
@@ -106,6 +109,16 @@
         "globals": "^16.5.0",
         "typescript": "^5.9.2",
         "typescript-eslint": "^8.50.0",
+      },
+    },
+    "packages/shared": {
+      "name": "@repo/shared",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@repo/eslint-config": "*",
+        "@repo/typescript-config": "*",
+        "eslint": "^9.39.1",
+        "typescript": "5.9.2",
       },
     },
     "packages/typescript-config": {
@@ -429,6 +442,8 @@
     "@repo/db": ["@repo/db@workspace:packages/db"],
 
     "@repo/eslint-config": ["@repo/eslint-config@workspace:packages/eslint-config"],
+
+    "@repo/shared": ["@repo/shared@workspace:packages/shared"],
 
     "@repo/typescript-config": ["@repo/typescript-config@workspace:packages/typescript-config"],
 

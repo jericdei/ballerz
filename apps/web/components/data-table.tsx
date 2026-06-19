@@ -6,6 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { Inbox } from "lucide-react";
 
 import {
   Table,
@@ -15,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 type DataTableProps<TData> = {
   columns: ColumnDef<TData, unknown>[];
@@ -36,13 +38,19 @@ export function DataTable<TData>({
   });
 
   return (
-    <div className="rounded-md border">
+    <div className="overflow-hidden rounded-xl border bg-background">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <TableRow
+              className="border-b bg-muted/40 hover:bg-muted/40"
+              key={headerGroup.id}
+            >
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead
+                  className="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                  key={header.id}
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -58,14 +66,17 @@ export function DataTable<TData>({
           {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
               <TableRow
-                className={onRowClick ? "cursor-pointer" : undefined}
+                className={cn(
+                  "transition-colors",
+                  onRowClick && "cursor-pointer hover:bg-muted/50",
+                )}
                 key={row.id}
                 onClick={
                   onRowClick ? () => onRowClick(row.original) : undefined
                 }
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell className="py-3" key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -73,8 +84,11 @@ export function DataTable<TData>({
             ))
           ) : (
             <TableRow>
-              <TableCell className="h-24 text-center" colSpan={columns.length}>
-                {emptyMessage}
+              <TableCell className="h-32" colSpan={columns.length}>
+                <div className="flex flex-col items-center justify-center gap-2 text-center text-sm text-muted-foreground">
+                  <Inbox className="size-8 opacity-30" />
+                  <p>{emptyMessage}</p>
+                </div>
               </TableCell>
             </TableRow>
           )}

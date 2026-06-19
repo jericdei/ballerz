@@ -3,6 +3,7 @@ import { gamesRouter } from "./routers/games";
 import { healthRouter } from "./routers/health";
 import { leaguesRouter } from "./routers/leagues";
 import { playersRouter } from "./routers/players";
+import { statsheetRouter } from "./routers/statsheet";
 import { teamsRouter } from "./routers/teams";
 import { createTRPCRouter } from "./trpc";
 
@@ -13,6 +14,7 @@ export const appRouter = createTRPCRouter({
   teams: teamsRouter,
   players: playersRouter,
   games: gamesRouter,
+  statsheet: statsheetRouter,
 });
 
 export type AppRouter = typeof appRouter;

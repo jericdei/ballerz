@@ -58,7 +58,13 @@ export const playersRouter = createTRPCRouter({
           createdAt: players.createdAt,
         })
         .from(players)
-        .where(and(eq(players.teamId, input.teamId), isNull(players.deletedAt)))
+        .where(
+          and(
+            eq(players.teamId, input.teamId),
+            isNull(players.deletedAt),
+            isNull(players.createdForGameId),
+          ),
+        )
         .orderBy(players.number);
     }),
 
@@ -71,7 +77,11 @@ export const playersRouter = createTRPCRouter({
         .select({ count: count(players.id) })
         .from(players)
         .where(
-          and(eq(players.teamId, input.teamId), isNull(players.deletedAt)),
+          and(
+            eq(players.teamId, input.teamId),
+            isNull(players.deletedAt),
+            isNull(players.createdForGameId),
+          ),
         );
 
       const playerCount = Number(playerCountResult?.count ?? 0);
@@ -91,6 +101,7 @@ export const playersRouter = createTRPCRouter({
             eq(players.teamId, input.teamId),
             eq(players.number, input.number),
             isNull(players.deletedAt),
+            isNull(players.createdForGameId),
           ),
         )
         .limit(1);
@@ -156,6 +167,7 @@ export const playersRouter = createTRPCRouter({
             eq(players.teamId, teamId),
             eq(players.number, input.number),
             isNull(players.deletedAt),
+            isNull(players.createdForGameId),
             ne(players.id, input.id),
           ),
         )

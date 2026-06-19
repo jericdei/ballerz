@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,10 @@ export function CreateTeamDialog({ leagueId }: CreateTeamDialogProps) {
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button type="button">Add team</Button>
+        <Button className="gap-1.5" size="sm" type="button">
+          <Plus className="size-4" />
+          Add team
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

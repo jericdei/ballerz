@@ -16,6 +16,7 @@ type AppShellProps = {
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
   actions?: React.ReactNode;
+  layout?: "default" | "wide" | "full";
   children: React.ReactNode;
 };
 
@@ -24,11 +25,26 @@ export function AppShell({
   description,
   breadcrumbs = [],
   actions,
+  layout = "default",
   children,
 }: AppShellProps) {
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 p-8">
-      <header className="flex items-start justify-between gap-4">
+    <div
+      className={
+        layout === "full"
+          ? "flex h-svh w-full flex-col overflow-hidden"
+          : layout === "wide"
+            ? "flex min-h-screen w-full flex-col"
+            : "mx-auto flex min-h-screen max-w-5xl flex-col gap-6 p-8"
+      }
+    >
+      <header
+        className={
+          layout === "full" || layout === "wide"
+            ? "flex shrink-0 items-start justify-between gap-4 border-b bg-card/50 px-4 py-3 backdrop-blur-sm md:px-6"
+            : "flex items-start justify-between gap-4"
+        }
+      >
         <div className="space-y-2">
           {breadcrumbs.length > 0 ? (
             <nav className="text-sm text-muted-foreground">
@@ -52,7 +68,15 @@ export function AppShell({
             </nav>
           ) : null}
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+            <h1
+              className={
+                layout === "full" || layout === "wide"
+                  ? "text-xl font-semibold tracking-tight md:text-2xl"
+                  : "text-3xl font-semibold tracking-tight"
+              }
+            >
+              {title}
+            </h1>
             {description ? (
               <p className="text-muted-foreground">{description}</p>
             ) : null}
@@ -70,7 +94,17 @@ export function AppShell({
           </Button>
         </div>
       </header>
-      {children}
+      <main
+        className={
+          layout === "full"
+            ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+            : layout === "wide"
+              ? "mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 md:px-6"
+              : undefined
+        }
+      >
+        {children}
+      </main>
     </div>
   );
 }

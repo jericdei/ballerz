@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTable } from "@/components/data-table";
@@ -11,6 +13,7 @@ import {
 } from "@/components/games/game-labels";
 import { GameRowActions } from "@/components/games/game-row-actions";
 import { formatScheduledAt } from "@/components/games/schedule-datetime";
+import { StartGameButton } from "@/components/games/start-game-button";
 import type { TeamRow } from "@/components/teams/teams-table";
 import { Badge } from "@/components/ui/badge";
 
@@ -35,23 +38,25 @@ type GamesTableProps = {
   teams: TeamRow[];
 };
 
-function statusVariant(
-  status: GameRow["status"],
-): "default" | "secondary" | "outline" | "destructive" {
+const openableStatuses = new Set(["in_progress", "halftime", "final"]);
+
+function statusBadgeClass(status: GameRow["status"]) {
   switch (status) {
     case "in_progress":
     case "halftime":
-      return "default";
+      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
     case "final":
-      return "secondary";
+      return "bg-violet-500/15 text-violet-700 dark:text-violet-300";
     case "cancelled":
-      return "destructive";
+      return "bg-destructive/15 text-destructive";
     default:
-      return "outline";
+      return "bg-slate-500/15 text-slate-700 dark:text-slate-300";
   }
 }
 
 export function GamesTable({ data, leagueId, teams }: GamesTableProps) {
+  const router = useRouter();
+
   const columns: ColumnDef<GameRow>[] = [
     {
       id: "matchup",
@@ -78,7 +83,7 @@ export function GamesTable({ data, leagueId, teams }: GamesTableProps) {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => (
-        <Badge variant={statusVariant(row.original.status)}>
+        <Badge className={statusBadgeClass(row.original.status)}>
           {formatGameStatus(row.original.status)}
         </Badge>
       ),
@@ -92,7 +97,19 @@ export function GamesTable({ data, leagueId, teams }: GamesTableProps) {
       id: "actions",
       header: "",
       cell: ({ row }) => (
-        <div className="flex justify-end">
+        <div
+          className="flex items-center justify-end gap-2"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <StartGameButton game={row.original} leagueId={leagueId} />
+          {openableStatuses.has(row.original.status) ? (
+            <Link
+              className="text-sm text-primary hover:underline"
+              href={`/leagues/${leagueId}/games/${row.original.id}`}
+            >
+              Statsheet
+            </Link>
+          ) : null}
           <GameRowActions
             game={row.original}
             leagueId={leagueId}
@@ -108,6 +125,11 @@ export function GamesTable({ data, leagueId, teams }: GamesTableProps) {
       columns={columns}
       data={data}
       emptyMessage="No games scheduled yet."
+      onRowClick={(row) => {
+        if (openableStatuses.has(row.status)) {
+          router.push(`/leagues/${leagueId}/games/${row.id}`);
+        }
+      }}
     />
   );
 }

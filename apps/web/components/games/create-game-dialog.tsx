@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CalendarPlus } from "lucide-react";
 import { z } from "zod";
 
 import { GAME_TYPES } from "@repo/api/constants";
@@ -129,7 +130,8 @@ export function CreateGameDialog({
   return (
     <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
-        <Button disabled={disabled} type="button">
+        <Button className="gap-1.5" disabled={disabled} size="sm" type="button">
+          <CalendarPlus className="size-4" />
           Schedule game
         </Button>
       </DialogTrigger>
