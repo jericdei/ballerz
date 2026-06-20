@@ -136,8 +136,8 @@ export function StatsheetEventLog() {
   };
 
   return (
-    <aside className="flex h-full min-h-0 flex-col overflow-hidden border-l bg-card/30">
-      <div className="flex shrink-0 items-center gap-2 border-b p-4">
+    <aside className="flex h-full min-h-0 flex-col overflow-hidden border-t bg-card/30 xl:border-t-0 xl:border-l">
+      <div className="flex shrink-0 items-center gap-2 border-b p-3 sm:p-4">
         <History className="size-4 text-muted-foreground" />
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Play-by-play

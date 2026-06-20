@@ -18,6 +18,7 @@ import {
   type RealtimeConnectionStatus,
   useStatsheetRealtime,
 } from "@/hooks/use-statsheet-realtime";
+import { createClientId } from "@/lib/client-id";
 import { startGameBuzzer, stopGameBuzzer } from "@/lib/play-game-buzzer";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 import { useTRPC } from "@/trpc/client";
@@ -81,7 +82,7 @@ export function StatsheetMutationsProvider({
 }: StatsheetMutationsProviderProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const sourceId = useMemo(() => crypto.randomUUID(), []);
+  const sourceId = useMemo(() => createClientId(), []);
   const eventLog = useStatsheetStore((state) => state.eventLog);
   const pendingEvents = useStatsheetStore((state) => state.pendingEvents);
   const getSyncPayload = useStatsheetStore((state) => state.getSyncPayload);

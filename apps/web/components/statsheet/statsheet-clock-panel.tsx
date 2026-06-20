@@ -50,7 +50,7 @@ function ClockActionButton({
   return (
     <button
       className={cn(
-        "group flex min-h-18 w-full flex-col items-center justify-center gap-1 rounded-xl border p-3 text-center transition-colors md:min-h-20 md:gap-1.5 md:p-4",
+        "group flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-xl border p-2.5 text-center transition-colors sm:min-h-18 sm:p-3 md:min-h-20 md:gap-1.5 md:p-4",
         "disabled:cursor-not-allowed disabled:opacity-40",
         border,
         chip,
@@ -99,7 +99,7 @@ function ClockDisplay({
       </p>
       <p
         className={cn(
-          "font-mono text-5xl font-bold tabular-nums md:text-6xl lg:text-7xl",
+          "font-mono text-4xl font-bold tabular-nums sm:text-5xl md:text-6xl lg:text-7xl",
           valueClassName,
         )}
       >
@@ -127,7 +127,7 @@ function ClockTimeoutButton({
   return (
     <button
       className={cn(
-        "flex min-h-18 w-full flex-col items-center justify-center gap-1 rounded-xl border p-3 text-center transition-colors md:min-h-20 md:gap-1.5 md:p-4",
+        "flex min-h-16 w-full flex-col items-center justify-center gap-1 rounded-xl border p-2.5 text-center transition-colors sm:min-h-18 sm:p-3 md:min-h-20 md:gap-1.5 md:p-4",
         "disabled:cursor-not-allowed disabled:opacity-40",
         "hover:opacity-90 active:opacity-80",
       )}
@@ -225,7 +225,7 @@ export function StatsheetClockPanel({
   return (
     <section
       className={cn(
-        "grid h-full min-h-0 grid-cols-1 gap-4 rounded-xl border bg-card p-4 shadow-sm md:grid-cols-2 md:gap-6 md:p-5",
+        "grid h-full min-h-0 grid-cols-1 gap-3 rounded-xl border bg-card p-3 shadow-sm sm:gap-4 sm:p-4 md:grid-cols-2 md:gap-6 md:p-5",
         className,
       )}
     >

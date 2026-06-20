@@ -8,8 +8,6 @@ import { AppShell } from "@/components/app-shell";
 import { CrudPageLoading } from "@/components/crud/crud-page-loading";
 import { formatMatchup } from "@/components/games/game-labels";
 import { StatsheetClockPanel } from "@/components/statsheet/statsheet-clock-panel";
-import { StatsheetCourt } from "@/components/statsheet/statsheet-court";
-import { StatsheetEventLog } from "@/components/statsheet/statsheet-event-log";
 import { StatsheetHeaderActions } from "@/components/statsheet/statsheet-header-actions";
 import {
   StatsheetMutationsProvider,
@@ -17,7 +15,7 @@ import {
 } from "@/components/statsheet/statsheet-mutations-context";
 import { StatsheetLiveBoard } from "@/components/statsheet/statsheet-live-board";
 import { StatsheetScoreboard } from "@/components/statsheet/statsheet-scoreboard";
-import { StatsheetStatPanel } from "@/components/statsheet/statsheet-stat-panel";
+import { StatsheetStatsLayout } from "@/components/statsheet/statsheet-stats-layout";
 import { StatsheetStatusBadges } from "@/components/statsheet/statsheet-status-badges";
 import {
   parseStatsheetView,
@@ -57,7 +55,7 @@ function StatsheetContent({
         )}
       >
         <StatsheetScoreboard hideCompactClock />
-        <div className="min-h-0 flex-1 overflow-hidden p-4 md:p-6">
+        <div className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4 md:p-6">
           <StatsheetClockPanel className="h-full w-full" />
         </div>
       </div>
@@ -72,17 +70,7 @@ function StatsheetContent({
       )}
     >
       <StatsheetScoreboard />
-      <div className="grid min-h-0 flex-1 overflow-hidden grid-rows-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] lg:grid-cols-[minmax(240px,280px)_1fr_minmax(260px,320px)] lg:grid-rows-1">
-        <div className="min-h-0 overflow-hidden">
-          <StatsheetStatPanel />
-        </div>
-        <div className="min-h-0 overflow-hidden">
-          <StatsheetCourt />
-        </div>
-        <div className="min-h-0 overflow-hidden">
-          <StatsheetEventLog />
-        </div>
-      </div>
+      <StatsheetStatsLayout />
     </div>
   );
 }

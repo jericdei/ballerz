@@ -16,6 +16,7 @@ import {
   formatPlayerName,
   formatStatEventLabel,
 } from "@/components/statsheet/statsheet-labels";
+import { createClientId } from "@/lib/client-id";
 import { isActiveGameStatus } from "@/lib/statsheet-utils";
 
 export type StatsheetRosterPlayer = {
@@ -434,7 +435,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
         : rosterPlayer!.teamId;
     const playerId = rosterPlayer?.playerId;
     const occurredAt = new Date();
-    const clientId = crypto.randomUUID();
+    const clientId = createClientId();
     const gameClockMs = getEventGameClockMs(state);
 
     const pendingEvent: PendingEvent = {
@@ -502,7 +503,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
     }
 
     const occurredAt = new Date();
-    const clientId = crypto.randomUUID();
+    const clientId = createClientId();
     const gameClockMs = getEventGameClockMs(state);
 
     const pendingEvent: PendingEvent = {

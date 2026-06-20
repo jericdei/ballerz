@@ -13,7 +13,7 @@ export function StatsheetCourt() {
   }
 
   return (
-    <section className="grid h-full min-h-0 gap-4 overflow-hidden p-4 md:grid-cols-2 md:p-6">
+    <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3 sm:gap-4 sm:p-4 md:grid md:h-full md:grid-cols-2 md:gap-4 md:overflow-hidden md:p-6">
       <StatsheetTeamColumn
         gameId={game.id}
         score={firstTeamScore}

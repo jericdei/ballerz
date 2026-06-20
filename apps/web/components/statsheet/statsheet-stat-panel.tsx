@@ -40,7 +40,7 @@ function StatButton({
           "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/50",
         made === false && "border-border bg-muted/30 hover:bg-muted/60",
         made === undefined && meta.chip,
-        "hover:scale-[1.02] active:scale-[0.98]",
+        "active:scale-[0.98] md:hover:scale-[1.02]",
       )}
       disabled={disabled}
       onClick={onClick}
@@ -75,8 +75,8 @@ export function StatsheetStatPanel() {
   );
 
   return (
-    <aside className="flex h-full min-h-0 flex-col overflow-hidden border-r bg-card/30">
-      <div className="shrink-0 border-b p-4">
+    <aside className="flex h-full min-h-0 flex-col overflow-hidden border-b bg-card/30 xl:border-b-0 xl:border-r">
+      <div className="shrink-0 border-b p-3 sm:p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Record stat
         </h2>
@@ -107,7 +107,7 @@ export function StatsheetStatPanel() {
         )}
       </div>
 
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 sm:space-y-5 sm:p-4">
         {statCategories.map((category) => {
           const meta = statCategoryMeta[category];
           const buttons = getStatsByCategory(category);

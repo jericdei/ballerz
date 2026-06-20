@@ -44,14 +44,14 @@ export function AppShell({
       <header
         className={
           layout === "full" || layout === "wide"
-            ? "flex shrink-0 items-start justify-between gap-4 border-b bg-card/50 px-4 py-3 backdrop-blur-sm md:px-6"
+            ? "flex shrink-0 flex-col gap-3 border-b bg-card/50 px-3 py-3 backdrop-blur-sm sm:flex-row sm:items-start sm:justify-between sm:gap-4 md:px-6"
             : "flex items-start justify-between gap-4"
         }
       >
-        <div className="min-w-0 flex-1 space-y-2">
+        <div className="min-w-0 flex-1 space-y-1.5 sm:space-y-2">
           <SiteBrand />
           {breadcrumbs.length > 0 ? (
-            <nav className="text-sm text-muted-foreground">
+            <nav className="hidden text-sm text-muted-foreground sm:block">
               {breadcrumbs.map((item, index) => (
                 <span key={`${item.label}-${index}`}>
                   {item.href ? (
@@ -72,11 +72,11 @@ export function AppShell({
             </nav>
           ) : null}
           <div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <h1
                 className={
                   layout === "full" || layout === "wide"
-                    ? "text-xl font-semibold tracking-tight md:text-2xl"
+                    ? "text-lg font-semibold tracking-tight sm:text-xl md:text-2xl"
                     : "text-3xl font-semibold tracking-tight"
                 }
               >
@@ -89,11 +89,13 @@ export function AppShell({
             ) : null}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
           {actions}
           <ModeToggle />
           <Button
+            className="shrink-0"
             onClick={() => signOut({ redirectTo: "/login" })}
+            size="sm"
             type="button"
             variant="outline"
           >

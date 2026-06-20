@@ -17,6 +17,7 @@ const nextConfig = {
   experimental: {
     viewTransition: true,
   },
+  allowedDevOrigins: ["192.168.1.61"],
 };
 
 export default nextConfig;

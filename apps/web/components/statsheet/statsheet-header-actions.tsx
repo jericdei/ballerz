@@ -18,7 +18,7 @@ export function StatsheetHeaderActions() {
     isActiveGameStatus(status) && eventLog.some((entry) => entry.canUndo);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
       <StatsheetViewToggle />
       {isActiveGameStatus(status) ? (
         <>
@@ -31,13 +31,15 @@ export function StatsheetHeaderActions() {
             variant="outline"
           >
             <RotateCcw className="size-3.5" />
-            {isUndoing ? "Undoing..." : "Undo"}
+            <span className="hidden sm:inline">
+              {isUndoing ? "Undoing..." : "Undo"}
+            </span>
           </Button>
           <FinishGameButton />
         </>
       ) : null}
       {error ? (
-        <span className="max-w-48 truncate text-sm text-destructive">
+        <span className="w-full truncate text-sm text-destructive sm:max-w-48 sm:w-auto">
           {error.message}
         </span>
       ) : null}

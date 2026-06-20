@@ -60,15 +60,16 @@ export function StatsheetTeamColumn({
   return (
     <div
       className={cn(
-        "flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border-2 bg-card shadow-sm",
+        "flex shrink-0 flex-col overflow-hidden rounded-2xl border-2 bg-card shadow-sm",
+        "md:h-full md:min-h-0",
       )}
       style={{ borderColor: theme.borderColor }}
     >
       <div
-        className="shrink-0 border-b p-4"
+        className="shrink-0 border-b p-3 sm:p-4"
         style={{ backgroundColor: theme.headerBackground }}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2 sm:gap-3">
           <div className="min-w-0">
             <span
               className="inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
@@ -79,17 +80,19 @@ export function StatsheetTeamColumn({
             >
               {sideLabel}
             </span>
-            <h2 className="mt-1 truncate text-lg font-semibold">{teamName}</h2>
+            <h2 className="mt-1 truncate text-base font-semibold sm:text-lg">
+              {teamName}
+            </h2>
           </div>
           <p
-            className="text-4xl font-bold tabular-nums leading-none"
+            className="text-3xl font-bold tabular-nums leading-none sm:text-4xl"
             style={{ color: theme.color }}
           >
             {score}
           </p>
         </div>
 
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-2 flex items-center gap-2 sm:mt-3 sm:gap-3">
           <TeamPeriodIndicators teamColor={teamColor} teamId={teamId} />
           <Button
             className="ml-auto h-7 gap-1 px-2 text-xs"
@@ -110,7 +113,7 @@ export function StatsheetTeamColumn({
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between border-b px-4 py-2">
+      <div className="flex shrink-0 items-center justify-between border-b px-3 py-2 sm:px-4">
         <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <Users className="size-3.5" />
           {teamPlayers.length} active
@@ -122,7 +125,7 @@ export function StatsheetTeamColumn({
         />
       </div>
 
-      <div className="grid min-h-0 flex-1 auto-rows-min content-start items-start gap-2 overflow-y-auto p-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+      <div className="grid auto-rows-min grid-cols-1 gap-2 p-2 sm:grid-cols-2 sm:p-3 md:min-h-0 md:flex-1 md:overflow-y-auto md:content-start">
         {teamPlayers.map((player) => (
           <StatsheetPlayerCard
             key={player.playerId}
