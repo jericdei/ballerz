@@ -38,7 +38,7 @@ export function getClockUpdatesForStatEvent(
   if (eventType === "timeout") {
     return {
       gameClockRunning: false,
-      ...getSuppressedShotClockUpdates(gameClockMs, shotClockMs),
+      shotClockRunning: false,
     };
   }
 

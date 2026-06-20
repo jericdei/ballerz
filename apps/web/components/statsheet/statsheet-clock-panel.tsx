@@ -6,6 +6,7 @@ import {
   formatClockMs,
   formatShotClockMs,
   canStartShotClock,
+  getRemainingTimeouts,
   isShotClockDisplayed,
   isShotClockEligible,
 } from "@repo/shared";
@@ -14,6 +15,7 @@ import { StatsheetBuzzerButton } from "@/components/statsheet/statsheet-buzzer-b
 import { StatsheetClockSettingsDialog } from "@/components/statsheet/statsheet-clock-settings";
 import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import { isActiveGameStatus } from "@/lib/statsheet-utils";
+import { getTeamTheme } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 
@@ -107,6 +109,51 @@ function ClockDisplay({
   );
 }
 
+type ClockTimeoutButtonProps = {
+  disabled?: boolean;
+  onClick: () => void;
+  remaining: number;
+  teamName: string;
+  theme: ReturnType<typeof getTeamTheme>;
+};
+
+function ClockTimeoutButton({
+  disabled = false,
+  onClick,
+  remaining,
+  teamName,
+  theme,
+}: ClockTimeoutButtonProps) {
+  return (
+    <button
+      className={cn(
+        "flex min-h-18 w-full flex-col items-center justify-center gap-1 rounded-xl border p-3 text-center transition-colors md:min-h-20 md:gap-1.5 md:p-4",
+        "disabled:cursor-not-allowed disabled:opacity-40",
+        "hover:opacity-90 active:opacity-80",
+      )}
+      disabled={disabled}
+      onClick={onClick}
+      style={{
+        borderColor: theme.borderColor,
+        backgroundColor: theme.badgeBackground,
+        color: theme.color,
+      }}
+      title={remaining === 0 ? "No timeouts remaining this quarter" : undefined}
+      type="button"
+    >
+      <span className="max-w-full truncate text-[11px] font-semibold uppercase tracking-wide opacity-80 md:text-xs">
+        {teamName}
+      </span>
+      <span className="text-sm font-bold leading-tight md:text-base">
+        Timeout
+      </span>
+      <span className="text-[11px] font-medium opacity-70 md:text-xs">
+        {remaining} left
+      </span>
+    </button>
+  );
+}
+
 export function StatsheetClockPanel({
   className,
   compact = false,
@@ -114,6 +161,9 @@ export function StatsheetClockPanel({
   const status = useStatsheetStore((state) => state.status);
   const game = useStatsheetStore((state) => state.game);
   const clock = useStatsheetStore((state) => state.clock);
+  const currentPeriod = useStatsheetStore((state) => state.currentPeriod);
+  const teamPeriodStats = useStatsheetStore((state) => state.teamPeriodStats);
+  const applyTimeout = useStatsheetStore((state) => state.applyTimeout);
   const { isBusy, sendClockCommand } = useStatsheetMutations();
 
   if (!clock || !isActiveGameStatus(status)) {
@@ -125,6 +175,23 @@ export function StatsheetClockPanel({
   const shotClockEligible = isShotClockEligible(clock.gameClockMs);
   const canRunShot = canStartShotClock(clock);
   const shotButtonActive = canRunShot || clock.shotClockRunning;
+  const canCallTimeout = isActiveGameStatus(status) && !isBusy;
+
+  const timeoutsPerQuarter = game?.timeoutsPerQuarter ?? 2;
+
+  function getRemainingForTeam(teamId: number) {
+    const periodKey = `${teamId}:${currentPeriod}`;
+    const timeoutsUsed = teamPeriodStats[periodKey]?.timeoutsUsed ?? 0;
+    return getRemainingTimeouts(timeoutsUsed, timeoutsPerQuarter);
+  }
+
+  const firstTeamRemaining =
+    game?.firstTeamId != null ? getRemainingForTeam(game.firstTeamId) : 0;
+  const secondTeamRemaining =
+    game?.secondTeamId != null ? getRemainingForTeam(game.secondTeamId) : 0;
+
+  const firstTheme = getTeamTheme(game?.firstTeamColor);
+  const secondTheme = getTeamTheme(game?.secondTeamColor);
 
   if (compact) {
     return (
@@ -316,6 +383,25 @@ export function StatsheetClockPanel({
             <StatsheetBuzzerButton layout="tablet" />
           </div>
         </div>
+
+        {game?.firstTeamId && game.secondTeamId ? (
+          <div className="grid grid-cols-2 gap-3 md:gap-4">
+            <ClockTimeoutButton
+              disabled={!canCallTimeout || firstTeamRemaining === 0}
+              onClick={() => applyTimeout(game.firstTeamId!)}
+              remaining={firstTeamRemaining}
+              teamName={game.firstTeamName ?? "Away"}
+              theme={firstTheme}
+            />
+            <ClockTimeoutButton
+              disabled={!canCallTimeout || secondTeamRemaining === 0}
+              onClick={() => applyTimeout(game.secondTeamId!)}
+              remaining={secondTeamRemaining}
+              teamName={game.secondTeamName ?? "Home"}
+              theme={secondTheme}
+            />
+          </div>
+        ) : null}
 
         {game ? <StatsheetClockSettingsDialog gameId={game.id} /> : null}
       </div>
