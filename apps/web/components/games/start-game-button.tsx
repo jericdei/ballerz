@@ -1,10 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { GameRow } from "@/components/games/games-table";
 import { Button } from "@/components/ui/button";
+import { useTransitionRouter } from "@/hooks/use-transition-router";
 import { useTRPC } from "@/trpc/client";
 
 type StartGameButtonProps = {
@@ -14,7 +14,7 @@ type StartGameButtonProps = {
 
 export function StartGameButton({ game, leagueId }: StartGameButtonProps) {
   const trpc = useTRPC();
-  const router = useRouter();
+  const router = useTransitionRouter();
   const queryClient = useQueryClient();
 
   const startMutation = useMutation(

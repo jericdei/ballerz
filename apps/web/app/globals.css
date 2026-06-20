@@ -122,3 +122,27 @@
     @apply cursor-pointer;
   }
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: view-transition-fade-out 180ms ease-out both;
+  }
+
+  ::view-transition-new(root) {
+    animation: view-transition-fade-in 180ms ease-in both;
+  }
+}
+
+@keyframes view-transition-fade-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes view-transition-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}

@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTable } from "@/components/data-table";
 import { LeagueRowActions } from "@/components/leagues/league-row-actions";
+import { TransitionLink } from "@/components/transition-link";
 import { Badge } from "@/components/ui/badge";
+import { useTransitionRouter } from "@/hooks/use-transition-router";
 
 export type LeagueRow = {
   id: number;
@@ -21,7 +21,7 @@ type LeaguesTableProps = {
 };
 
 export function LeaguesTable({ data }: LeaguesTableProps) {
-  const router = useRouter();
+  const router = useTransitionRouter();
 
   const columns: ColumnDef<LeagueRow>[] = [
     {
@@ -65,12 +65,12 @@ export function LeaguesTable({ data }: LeaguesTableProps) {
           className="flex items-center justify-end gap-2"
           onClick={(event) => event.stopPropagation()}
         >
-          <Link
+          <TransitionLink
             className="text-sm text-primary hover:underline"
             href={`/leagues/${row.original.id}`}
           >
             Open
-          </Link>
+          </TransitionLink>
           <LeagueRowActions league={row.original} />
         </div>
       ),

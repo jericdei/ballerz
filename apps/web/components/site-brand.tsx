@@ -1,6 +1,5 @@
-import Link from "next/link";
-
 import { BallerzLogo } from "@/components/ballerz-logo";
+import { TransitionLink } from "@/components/transition-link";
 import { cn } from "@/lib/utils";
 
 type SiteBrandProps = {
@@ -10,7 +9,7 @@ type SiteBrandProps = {
 
 export function SiteBrand({ className, showWordmark = true }: SiteBrandProps) {
   return (
-    <Link
+    <TransitionLink
       className={cn(
         "inline-flex items-center gap-2 rounded-md text-foreground transition-opacity hover:opacity-80",
         className,
@@ -21,6 +20,6 @@ export function SiteBrand({ className, showWordmark = true }: SiteBrandProps) {
       {showWordmark ? (
         <span className="text-base font-semibold tracking-tight">Ballerz</span>
       ) : null}
-    </Link>
+    </TransitionLink>
   );
 }

@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 import { ModeToggle } from "@/components/mode-toggle";
 import { SiteBrand } from "@/components/site-brand";
+import { TransitionLink } from "@/components/transition-link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,9 +17,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTransitionRouter } from "@/hooks/use-transition-router";
 
 export function LoginForm() {
-  const router = useRouter();
+  const router = useTransitionRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -95,12 +95,12 @@ export function LoginForm() {
             </Button>
             <p className="text-sm text-muted-foreground">
               No account?{" "}
-              <Link
+              <TransitionLink
                 className="text-primary underline-offset-4 hover:underline"
                 href="/register"
               >
                 Create one
-              </Link>
+              </TransitionLink>
             </p>
           </CardFooter>
         </form>

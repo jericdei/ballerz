@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Zap } from "lucide-react";
@@ -37,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTransitionRouter } from "@/hooks/use-transition-router";
 import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useTRPC } from "@/trpc/client";
 
@@ -65,7 +65,7 @@ export function QuickStartGameDialog({
   disabled = false,
 }: QuickStartGameDialogProps) {
   const trpc = useTRPC();
-  const router = useRouter();
+  const router = useTransitionRouter();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const form = useForm<FormValues>({

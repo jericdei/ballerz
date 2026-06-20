@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useMutation } from "@tanstack/react-query";
 import { TRPCClientError } from "@trpc/client";
 
 import { ModeToggle } from "@/components/mode-toggle";
 import { SiteBrand } from "@/components/site-brand";
+import { TransitionLink } from "@/components/transition-link";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,10 +19,11 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTransitionRouter } from "@/hooks/use-transition-router";
 import { useTRPC } from "@/trpc/client";
 
 export function RegisterForm() {
-  const router = useRouter();
+  const router = useTransitionRouter();
   const trpc = useTRPC();
   const registerMutation = useMutation(trpc.auth.register.mutationOptions());
   const [name, setName] = useState("");
@@ -129,12 +129,12 @@ export function RegisterForm() {
             </Button>
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link
+              <TransitionLink
                 className="text-primary underline-offset-4 hover:underline"
                 href="/login"
               >
                 Sign in
-              </Link>
+              </TransitionLink>
             </p>
           </CardFooter>
         </form>

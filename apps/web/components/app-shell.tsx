@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { signOut } from "next-auth/react";
 
 import { ModeToggle } from "@/components/mode-toggle";
 import { SiteBrand } from "@/components/site-brand";
+import { TransitionLink } from "@/components/transition-link";
 import { Button } from "@/components/ui/button";
 
 export type BreadcrumbItem = {
@@ -55,12 +55,12 @@ export function AppShell({
               {breadcrumbs.map((item, index) => (
                 <span key={`${item.label}-${index}`}>
                   {item.href ? (
-                    <Link
+                    <TransitionLink
                       className="hover:text-foreground hover:underline"
                       href={item.href}
                     >
                       {item.label}
-                    </Link>
+                    </TransitionLink>
                   ) : (
                     <span className="text-foreground">{item.label}</span>
                   )}

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 
 import { CreatePlayerDialog } from "@/components/players/create-player-dialog";
 import { DeleteTeamDialog } from "@/components/teams/delete-team-dialog";
 import { EditTeamDialog } from "@/components/teams/edit-team-dialog";
 import { Button } from "@/components/ui/button";
+import { useTransitionRouter } from "@/hooks/use-transition-router";
 
 type TeamDetailActionsProps = {
   teamId: number;
@@ -26,7 +26,7 @@ export function TeamDetailActions({
   playerCount,
   maxPlayers,
 }: TeamDetailActionsProps) {
-  const router = useRouter();
+  const router = useTransitionRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 

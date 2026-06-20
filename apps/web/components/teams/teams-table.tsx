@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { DataTable } from "@/components/data-table";
 import { TeamRowActions } from "@/components/teams/team-row-actions";
+import { TransitionLink } from "@/components/transition-link";
+import { useTransitionRouter } from "@/hooks/use-transition-router";
 
 export type TeamRow = {
   id: number;
@@ -22,7 +22,7 @@ type TeamsTableProps = {
 };
 
 export function TeamsTable({ data, leagueId }: TeamsTableProps) {
-  const router = useRouter();
+  const router = useTransitionRouter();
 
   const columns: ColumnDef<TeamRow>[] = [
     {
@@ -63,12 +63,12 @@ export function TeamsTable({ data, leagueId }: TeamsTableProps) {
           className="flex items-center justify-end gap-2"
           onClick={(event) => event.stopPropagation()}
         >
-          <Link
+          <TransitionLink
             className="text-sm text-primary hover:underline"
             href={`/leagues/${leagueId}/teams/${row.original.id}`}
           >
             Roster
-          </Link>
+          </TransitionLink>
           <TeamRowActions leagueId={leagueId} team={row.original} />
         </div>
       ),

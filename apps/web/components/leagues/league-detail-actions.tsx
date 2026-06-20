@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 
 import { DeleteLeagueDialog } from "@/components/leagues/delete-league-dialog";
 import { EditLeagueDialog } from "@/components/leagues/edit-league-dialog";
 import { Button } from "@/components/ui/button";
+import { useTransitionRouter } from "@/hooks/use-transition-router";
 
 type LeagueDetailActionsProps = {
   leagueId: number;
@@ -17,7 +17,7 @@ export function LeagueDetailActions({
   leagueId,
   leagueName,
 }: LeagueDetailActionsProps) {
-  const router = useRouter();
+  const router = useTransitionRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 

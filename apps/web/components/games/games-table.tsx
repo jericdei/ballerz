@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ClipboardList, Table2 } from "lucide-react";
 
@@ -16,8 +14,10 @@ import { GameRowActions } from "@/components/games/game-row-actions";
 import { formatScheduledAt } from "@/components/games/schedule-datetime";
 import { StartGameButton } from "@/components/games/start-game-button";
 import type { TeamRow } from "@/components/teams/teams-table";
+import { TransitionLink } from "@/components/transition-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTransitionRouter } from "@/hooks/use-transition-router";
 
 export type GameRow = {
   id: number;
@@ -70,7 +70,7 @@ function statusBadgeClass(status: GameRow["status"]) {
 }
 
 export function GamesTable({ data, leagueId, teams }: GamesTableProps) {
-  const router = useRouter();
+  const router = useTransitionRouter();
 
   const columns: ColumnDef<GameRow>[] = [
     {
@@ -119,20 +119,22 @@ export function GamesTable({ data, leagueId, teams }: GamesTableProps) {
           <StartGameButton game={row.original} leagueId={leagueId} />
           {liveStatuses.has(row.original.status) ? (
             <Button asChild className="gap-1.5" size="sm" variant="outline">
-              <Link href={`/leagues/${leagueId}/games/${row.original.id}`}>
+              <TransitionLink
+                href={`/leagues/${leagueId}/games/${row.original.id}`}
+              >
                 <ClipboardList className="size-3.5" />
                 Statsheet
-              </Link>
+              </TransitionLink>
             </Button>
           ) : null}
           {row.original.status === finalStatus ? (
             <Button asChild className="gap-1.5" size="sm" variant="outline">
-              <Link
+              <TransitionLink
                 href={`/leagues/${leagueId}/games/${row.original.id}/box-score`}
               >
                 <Table2 className="size-3.5" />
                 Box score
-              </Link>
+              </TransitionLink>
             </Button>
           ) : null}
           <GameRowActions
