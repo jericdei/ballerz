@@ -118,7 +118,7 @@ export function StatsheetTeamColumn({
         />
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-2 overflow-y-auto p-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+      <div className="grid min-h-0 flex-1 auto-rows-min content-start items-start gap-2 overflow-y-auto p-3 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
         {teamPlayers.map((player) => (
           <StatsheetPlayerCard
             key={player.playerId}

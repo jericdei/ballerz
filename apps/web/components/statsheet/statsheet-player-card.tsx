@@ -38,7 +38,7 @@ export function StatsheetPlayerCard({
   return (
     <button
       className={cn(
-        "flex w-full flex-col rounded-xl border bg-background p-3 text-left transition-all",
+        "flex w-full flex-col self-start rounded-xl border bg-background p-3 text-left transition-all",
         "hover:bg-muted/40 hover:shadow-sm",
         isSelected ? "shadow-md" : "border-border/80",
         !canSelectPlayer && "pointer-events-none opacity-60",
