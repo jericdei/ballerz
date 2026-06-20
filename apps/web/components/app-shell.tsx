@@ -13,6 +13,7 @@ export type BreadcrumbItem = {
 
 type AppShellProps = {
   title: string;
+  titleAddon?: React.ReactNode;
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
   actions?: React.ReactNode;
@@ -22,6 +23,7 @@ type AppShellProps = {
 
 export function AppShell({
   title,
+  titleAddon,
   description,
   breadcrumbs = [],
   actions,
@@ -68,15 +70,18 @@ export function AppShell({
             </nav>
           ) : null}
           <div>
-            <h1
-              className={
-                layout === "full" || layout === "wide"
-                  ? "text-xl font-semibold tracking-tight md:text-2xl"
-                  : "text-3xl font-semibold tracking-tight"
-              }
-            >
-              {title}
-            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1
+                className={
+                  layout === "full" || layout === "wide"
+                    ? "text-xl font-semibold tracking-tight md:text-2xl"
+                    : "text-3xl font-semibold tracking-tight"
+                }
+              >
+                {title}
+              </h1>
+              {titleAddon}
+            </div>
             {description ? (
               <p className="text-muted-foreground">{description}</p>
             ) : null}

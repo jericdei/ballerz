@@ -6,26 +6,20 @@ import { GAME_PERIODS } from "@repo/shared";
 
 import { formatPeriodLabel } from "@/components/statsheet/statsheet-labels";
 import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
-import { Badge } from "@/components/ui/badge";
+import { isActiveGameStatus } from "@/lib/statsheet-utils";
 import { getTeamTheme, withAlpha } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 
-const statusStyles: Record<string, string> = {
-  scheduled: "bg-slate-500/15 text-slate-700 dark:text-slate-300",
-  in_progress: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  halftime: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  final: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
-};
-
 export function StatsheetScoreboard() {
   const game = useStatsheetStore((state) => state.game);
   const currentPeriod = useStatsheetStore((state) => state.currentPeriod);
+  const status = useStatsheetStore((state) => state.status);
   const setPeriod = useStatsheetStore((state) => state.setPeriod);
   const firstTeamScore = useStatsheetStore((state) => state.firstTeamScore);
   const secondTeamScore = useStatsheetStore((state) => state.secondTeamScore);
-  const dirty = useStatsheetStore((state) => state.dirty);
-  const { isBusy, isSaving, isUndoing } = useStatsheetMutations();
+  const { isBusy } = useStatsheetMutations();
+  const canEditPeriod = isActiveGameStatus(status) && !isBusy;
 
   if (!game?.firstTeamId || !game.secondTeamId) {
     return null;
@@ -33,7 +27,6 @@ export function StatsheetScoreboard() {
 
   const firstTheme = getTeamTheme(game.firstTeamColor);
   const secondTheme = getTeamTheme(game.secondTeamColor);
-  const statusLabel = game.status.replaceAll("_", " ");
 
   return (
     <section
@@ -96,8 +89,9 @@ export function StatsheetScoreboard() {
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   isBusy && "pointer-events-none opacity-50",
+                  !canEditPeriod && "pointer-events-none opacity-50",
                 )}
-                disabled={isBusy}
+                disabled={!canEditPeriod}
                 key={period}
                 onClick={() => setPeriod(period)}
                 type="button"
@@ -106,34 +100,6 @@ export function StatsheetScoreboard() {
               </button>
             ))}
           </div>
-
-          <Badge
-            className={cn(
-              "capitalize",
-              statusStyles[game.status] ?? "bg-muted text-muted-foreground",
-            )}
-            variant="secondary"
-          >
-            {statusLabel}
-          </Badge>
-
-          {dirty ? (
-            <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
-              Unsaved changes
-            </Badge>
-          ) : null}
-
-          {isSaving ? (
-            <Badge className="bg-sky-500/15 text-sky-700 dark:text-sky-300">
-              Saving...
-            </Badge>
-          ) : null}
-
-          {isUndoing ? (
-            <Badge className="bg-violet-500/15 text-violet-700 dark:text-violet-300">
-              Undoing...
-            </Badge>
-          ) : null}
         </div>
       </div>
     </section>

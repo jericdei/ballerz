@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Shield,
   Swords,
+  Trophy,
   Users,
 } from "lucide-react";
 
@@ -14,20 +15,38 @@ import { MIN_TEAMS_PER_LEAGUE } from "@repo/api/constants";
 
 import { AppShell } from "@/components/app-shell";
 import { CrudPageLoading } from "@/components/crud/crud-page-loading";
-import { CrudPageSection } from "@/components/crud/crud-page-section";
 import { CrudStatCard, CrudStatStrip } from "@/components/crud/crud-stat-card";
 import { CreateGameDialog } from "@/components/games/create-game-dialog";
 import { GamesTable } from "@/components/games/games-table";
 import { QuickStartGameDialog } from "@/components/games/quick-start-game-dialog";
 import { LeagueDetailActions } from "@/components/leagues/league-detail-actions";
+import { LeagueLeadersTable } from "@/components/leagues/league-leaders-table";
 import { CreateTeamDialog } from "@/components/teams/create-team-dialog";
 import { TeamsTable } from "@/components/teams/teams-table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTRPC } from "@/trpc/client";
 
 type LeagueDetailPageContentProps = {
   leagueId: number;
 };
+
+function TabPanelHeader({
+  description,
+  actions,
+}: {
+  description: string;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2">{actions}</div>
+      ) : null}
+    </div>
+  );
+}
 
 export function LeagueDetailPageContent({
   leagueId,
@@ -42,16 +61,28 @@ export function LeagueDetailPageContent({
   const gamesQuery = useQuery(
     trpc.games.listByLeague.queryOptions({ leagueId }),
   );
+  const leadersQuery = useQuery(
+    trpc.leagues.leaders.queryOptions({ id: leagueId }),
+  );
 
-  if (leagueQuery.isError || teamsQuery.isError || gamesQuery.isError) {
+  if (
+    leagueQuery.isError ||
+    teamsQuery.isError ||
+    gamesQuery.isError ||
+    leadersQuery.isError
+  ) {
     notFound();
   }
 
   const league = leagueQuery.data;
   const teams = teamsQuery.data ?? [];
   const games = gamesQuery.data ?? [];
+  const leaders = leadersQuery.data ?? [];
   const isLoading =
-    leagueQuery.isLoading || teamsQuery.isLoading || gamesQuery.isLoading;
+    leagueQuery.isLoading ||
+    teamsQuery.isLoading ||
+    gamesQuery.isLoading ||
+    leadersQuery.isLoading;
   const liveGames = games.filter(
     (game) => game.status === "in_progress" || game.status === "halftime",
   ).length;
@@ -121,44 +152,65 @@ export function LeagueDetailPageContent({
             />
           </CrudStatStrip>
 
-          <CrudPageSection
-            accent="blue"
-            actions={<CreateTeamDialog leagueId={leagueId} />}
-            description="Add teams and open rosters to manage players."
-            icon={Users}
-            title="Teams"
+          <Tabs
+            className="rounded-2xl border bg-card p-4 shadow-sm md:p-6"
+            defaultValue="leaders"
           >
-            <TeamsTable data={teams} leagueId={leagueId} />
-          </CrudPageSection>
+            <TabsList className="grid w-full grid-cols-3 sm:inline-flex sm:w-auto">
+              <TabsTrigger value="leaders">
+                <Trophy />
+                Leaders
+              </TabsTrigger>
+              <TabsTrigger value="teams">
+                <Users />
+                Teams
+              </TabsTrigger>
+              <TabsTrigger value="games">
+                <CalendarDays />
+                Games
+              </TabsTrigger>
+            </TabsList>
 
-          <CrudPageSection
-            accent="orange"
-            actions={
-              <div className="flex flex-wrap items-center gap-2">
-                <CreateGameDialog
-                  disabled={!league.isReady}
-                  leagueId={leagueId}
-                  teams={teams}
-                />
-                <QuickStartGameDialog
-                  disabled={!league.isReady}
-                  leagueId={leagueId}
-                  teams={teams}
-                />
-              </div>
-            }
-            description="Schedule matchups or quick-start a live statsheet."
-            icon={CalendarDays}
-            title="Games"
-          >
-            {!league.isReady ? (
-              <p className="mb-4 rounded-xl border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
-                Add at least {MIN_TEAMS_PER_LEAGUE} teams before scheduling
-                games.
-              </p>
-            ) : null}
-            <GamesTable data={games} leagueId={leagueId} teams={teams} />
-          </CrudPageSection>
+            <TabsContent value="leaders">
+              <TabPanelHeader description="Per-game averages from completed games, ranked by category." />
+              <LeagueLeadersTable data={leaders} />
+            </TabsContent>
+
+            <TabsContent value="teams">
+              <TabPanelHeader
+                actions={<CreateTeamDialog leagueId={leagueId} />}
+                description="Add teams and open rosters to manage players."
+              />
+              <TeamsTable data={teams} leagueId={leagueId} />
+            </TabsContent>
+
+            <TabsContent value="games">
+              <TabPanelHeader
+                actions={
+                  <>
+                    <CreateGameDialog
+                      disabled={!league.isReady}
+                      leagueId={leagueId}
+                      teams={teams}
+                    />
+                    <QuickStartGameDialog
+                      disabled={!league.isReady}
+                      leagueId={leagueId}
+                      teams={teams}
+                    />
+                  </>
+                }
+                description="Schedule matchups or quick-start a live statsheet."
+              />
+              {!league.isReady ? (
+                <p className="mb-4 rounded-xl border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
+                  Add at least {MIN_TEAMS_PER_LEAGUE} teams before scheduling
+                  games.
+                </p>
+              ) : null}
+              <GamesTable data={games} leagueId={leagueId} teams={teams} />
+            </TabsContent>
+          </Tabs>
         </div>
       ) : null}
     </AppShell>

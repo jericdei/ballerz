@@ -8,6 +8,7 @@ import { AddGuestPlayerDialog } from "@/components/statsheet/add-guest-player-di
 import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import { StatsheetPlayerCard } from "@/components/statsheet/statsheet-player-card";
 import { Button } from "@/components/ui/button";
+import { isActiveGameStatus } from "@/lib/statsheet-utils";
 import { getTeamTheme } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
@@ -33,8 +34,10 @@ export function StatsheetTeamColumn({
   const playerStats = useStatsheetStore((state) => state.playerStats);
   const teamPeriodStats = useStatsheetStore((state) => state.teamPeriodStats);
   const currentPeriod = useStatsheetStore((state) => state.currentPeriod);
+  const status = useStatsheetStore((state) => state.status);
   const applyTimeout = useStatsheetStore((state) => state.applyTimeout);
   const { isBusy } = useStatsheetMutations();
+  const canEditGame = isActiveGameStatus(status) && !isBusy;
 
   const theme = getTeamTheme(teamColor);
   const teamPlayers = rosters.filter(
@@ -91,7 +94,7 @@ export function StatsheetTeamColumn({
           </div>
           <Button
             className="ml-auto h-8 gap-1.5"
-            disabled={isBusy}
+            disabled={!canEditGame}
             onClick={() => applyTimeout(teamId)}
             size="sm"
             type="button"
@@ -109,7 +112,7 @@ export function StatsheetTeamColumn({
           {teamPlayers.length} active
         </div>
         <AddGuestPlayerDialog
-          disabled={isBusy}
+          disabled={!canEditGame}
           gameId={gameId}
           teamId={teamId}
         />

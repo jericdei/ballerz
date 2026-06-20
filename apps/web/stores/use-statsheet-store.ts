@@ -15,6 +15,7 @@ import {
   formatPlayerName,
   formatStatEventLabel,
 } from "@/components/statsheet/statsheet-labels";
+import { isActiveGameStatus } from "@/lib/statsheet-utils";
 
 export type StatsheetRosterPlayer = {
   id: number;
@@ -373,7 +374,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
 
   applyStat: (eventType) => {
     const state = get();
-    if (!state.game) return;
+    if (!state.game || !isActiveGameStatus(state.status)) return;
 
     if (eventType !== "timeout" && state.selectedPlayerId == null) {
       return;
@@ -441,7 +442,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
 
   applyTimeout: (teamId) => {
     const state = get();
-    if (!state.game) return;
+    if (!state.game || !isActiveGameStatus(state.status)) return;
     if (
       teamId !== state.game.firstTeamId &&
       teamId !== state.game.secondTeamId

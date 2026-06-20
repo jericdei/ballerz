@@ -8,6 +8,7 @@ import {
   statCategories,
   statCategoryMeta,
 } from "@/components/statsheet/statsheet-stat-config";
+import { isActiveGameStatus } from "@/lib/statsheet-utils";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 
@@ -64,8 +65,10 @@ function StatButton({
 export function StatsheetStatPanel() {
   const selectedPlayerId = useStatsheetStore((state) => state.selectedPlayerId);
   const rosters = useStatsheetStore((state) => state.rosters);
+  const status = useStatsheetStore((state) => state.status);
   const applyStat = useStatsheetStore((state) => state.applyStat);
   const { isBusy } = useStatsheetMutations();
+  const canRecordStats = isActiveGameStatus(status) && !isBusy;
 
   const selectedPlayer = rosters.find(
     (row) => row.playerId === selectedPlayerId,
@@ -77,6 +80,11 @@ export function StatsheetStatPanel() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Record stat
         </h2>
+        {!canRecordStats ? (
+          <p className="mt-2 text-sm text-muted-foreground">
+            This game is finished. Stats are read-only.
+          </p>
+        ) : null}
         {selectedPlayer ? (
           <div className="mt-3 flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
@@ -118,7 +126,7 @@ export function StatsheetStatPanel() {
                 {buttons.map((config) => (
                   <StatButton
                     category={config.category}
-                    disabled={!selectedPlayerId || isBusy}
+                    disabled={!selectedPlayerId || !canRecordStats}
                     icon={config.icon}
                     key={config.eventType}
                     label={config.label}

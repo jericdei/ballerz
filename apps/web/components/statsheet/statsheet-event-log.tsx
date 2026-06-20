@@ -7,6 +7,7 @@ import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutation
 import { getStatButtonConfig } from "@/components/statsheet/statsheet-stat-config";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { isActiveGameStatus } from "@/lib/statsheet-utils";
 import { cn } from "@/lib/utils";
 import type { StatsheetEventLogEntry } from "@/stores/use-statsheet-store";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
@@ -19,8 +20,10 @@ function StatsheetEventLogRow({
   teamName: (teamId: number) => string;
 }) {
   const undoPending = useStatsheetStore((state) => state.undoPending);
+  const status = useStatsheetStore((state) => state.status);
   const { isBusy, isUndoing, undoingEventId, undoEvent, error } =
     useStatsheetMutations();
+  const canUndo = isActiveGameStatus(status) && !isBusy;
   const config = getStatButtonConfig(entry.eventType);
   const Icon = config?.icon;
   const isUndoingThisRow =
@@ -74,7 +77,7 @@ function StatsheetEventLogRow({
             {entry.canUndo ? (
               <Button
                 className="size-7"
-                disabled={isBusy}
+                disabled={!canUndo}
                 onClick={handleUndo}
                 size="icon"
                 title="Undo"

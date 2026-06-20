@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, type ReactNode, useContext, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 import { useTRPC } from "@/trpc/client";
@@ -14,9 +14,11 @@ type StatsheetMutationsContextValue = {
   isBusy: boolean;
   isSaving: boolean;
   isUndoing: boolean;
+  isFinishing: boolean;
   undoingEventId: number | null;
   error: { message: string } | null;
   save: () => void;
+  finishGame: () => void;
   undoEvent: (eventId: number) => void;
   undoLast: () => void;
 };
@@ -57,6 +59,7 @@ export function StatsheetMutationsProvider({
   children,
 }: StatsheetMutationsProviderProps) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const eventLog = useStatsheetStore((state) => state.eventLog);
   const getSyncPayload = useStatsheetStore((state) => state.getSyncPayload);
   const hydrate = useStatsheetStore((state) => state.hydrate);
@@ -67,6 +70,24 @@ export function StatsheetMutationsProvider({
     trpc.statsheet.sync.mutationOptions({
       onSuccess: (snapshot) => {
         hydrateFromSnapshot(snapshot, hydrate);
+      },
+    }),
+  );
+
+  const finishMutation = useMutation(
+    trpc.statsheet.finish.mutationOptions({
+      onSuccess: async (snapshot) => {
+        hydrateFromSnapshot(snapshot, hydrate);
+
+        const leagueId = snapshot.game.leagueId;
+        if (leagueId != null) {
+          await queryClient.invalidateQueries(
+            trpc.games.listByLeague.queryFilter({ leagueId }),
+          );
+          await queryClient.invalidateQueries(
+            trpc.leagues.leaders.queryFilter({ id: leagueId }),
+          );
+        }
       },
     }),
   );
@@ -83,9 +104,11 @@ export function StatsheetMutationsProvider({
   );
 
   const isSaving = syncMutation.isPending;
+  const isFinishing = finishMutation.isPending;
   const isUndoing = reverseMutation.isPending;
-  const isBusy = isSaving || isUndoing;
-  const error = syncMutation.error ?? reverseMutation.error;
+  const isBusy = isSaving || isFinishing || isUndoing;
+  const error =
+    syncMutation.error ?? finishMutation.error ?? reverseMutation.error;
 
   function save() {
     const payload = getSyncPayload();
@@ -93,6 +116,15 @@ export function StatsheetMutationsProvider({
       gameId,
       currentPeriod: payload.currentPeriod,
       status: payload.status,
+      events: payload.events,
+    });
+  }
+
+  function finishGame() {
+    const payload = getSyncPayload();
+    finishMutation.mutate({
+      gameId,
+      currentPeriod: payload.currentPeriod,
       events: payload.events,
     });
   }
@@ -122,9 +154,11 @@ export function StatsheetMutationsProvider({
         isBusy,
         isSaving,
         isUndoing,
+        isFinishing,
         undoingEventId,
         error,
         save,
+        finishGame,
         undoEvent,
         undoLast,
       }}

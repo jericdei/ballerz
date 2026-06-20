@@ -11,6 +11,7 @@ import {
   auditUpdate,
 } from "../lib/access";
 import { MIN_TEAMS_PER_LEAGUE } from "../lib/constants";
+import { loadLeagueLeaders } from "../lib/league-leaders";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const createLeagueInput = z.object({
@@ -103,6 +104,13 @@ export const leaguesRouter = createTRPCRouter({
         teamCount,
         isReady: teamCount >= MIN_TEAMS_PER_LEAGUE,
       };
+    }),
+
+  leaders: protectedProcedure
+    .input(leagueIdInput)
+    .query(async ({ ctx, input }) => {
+      await assertLeagueOwner(input.id, ctx.session.user.id);
+      return loadLeagueLeaders(input.id);
     }),
 
   update: protectedProcedure

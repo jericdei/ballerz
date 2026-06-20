@@ -16,6 +16,7 @@ import {
 } from "@/components/statsheet/statsheet-mutations-context";
 import { StatsheetScoreboard } from "@/components/statsheet/statsheet-scoreboard";
 import { StatsheetStatPanel } from "@/components/statsheet/statsheet-stat-panel";
+import { StatsheetStatusBadges } from "@/components/statsheet/statsheet-status-badges";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 import { useTRPC } from "@/trpc/client";
@@ -112,6 +113,7 @@ export function StatsheetPageContent({
         ]}
         layout="full"
         title={title}
+        titleAddon={<StatsheetStatusBadges />}
       >
         <StatsheetContent />
       </AppShell>

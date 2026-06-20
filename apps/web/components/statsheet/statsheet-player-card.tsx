@@ -4,6 +4,7 @@ import type { PlayerStatDeltas } from "@repo/shared";
 
 import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import { Badge } from "@/components/ui/badge";
+import { isActiveGameStatus } from "@/lib/statsheet-utils";
 import { getTeamTheme } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
@@ -27,7 +28,9 @@ export function StatsheetPlayerCard({
 }: StatsheetPlayerCardProps) {
   const selectedPlayerId = useStatsheetStore((state) => state.selectedPlayerId);
   const selectPlayer = useStatsheetStore((state) => state.selectPlayer);
+  const status = useStatsheetStore((state) => state.status);
   const { isBusy } = useStatsheetMutations();
+  const canSelectPlayer = isActiveGameStatus(status) && !isBusy;
   const isSelected = selectedPlayerId === playerId;
   const totalRebounds = stats.offensiveRebounds + stats.defensiveRebounds;
   const theme = getTeamTheme(teamColor);
@@ -38,9 +41,9 @@ export function StatsheetPlayerCard({
         "flex w-full flex-col rounded-xl border bg-background p-3 text-left transition-all",
         "hover:bg-muted/40 hover:shadow-sm",
         isSelected ? "shadow-md" : "border-border/80",
-        isBusy && "pointer-events-none opacity-60",
+        !canSelectPlayer && "pointer-events-none opacity-60",
       )}
-      disabled={isBusy}
+      disabled={!canSelectPlayer}
       onClick={() => selectPlayer(isSelected ? null : playerId)}
       style={
         isSelected
