@@ -173,16 +173,24 @@ export function EditPlayerDialog({
               control={form.control}
               name="isCaptain"
               render={({ field }) => (
-                <FormItem className="flex items-center gap-2 space-y-0">
-                  <FormControl>
-                    <input
-                      checked={field.value}
-                      className="size-4 rounded border"
-                      onChange={(event) => field.onChange(event.target.checked)}
-                      type="checkbox"
-                    />
-                  </FormControl>
-                  <FormLabel className="font-normal">Team captain</FormLabel>
+                <FormItem className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <FormControl>
+                      <input
+                        checked={field.value}
+                        className="size-4 rounded border"
+                        onChange={(event) =>
+                          field.onChange(event.target.checked)
+                        }
+                        type="checkbox"
+                      />
+                    </FormControl>
+                    <FormLabel className="font-normal">Team captain</FormLabel>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Only one captain per team. Assigning a new captain replaces
+                    the current one.
+                  </p>
                 </FormItem>
               )}
             />

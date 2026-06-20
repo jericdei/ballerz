@@ -113,27 +113,46 @@ export const playersRouter = createTRPCRouter({
         });
       }
 
-      const [player] = await db
-        .insert(players)
-        .values({
-          teamId: input.teamId,
-          firstName: input.firstName,
-          lastName: input.lastName,
-          number: input.number,
-          position: input.position ?? null,
-          isCaptain: input.isCaptain,
-          ...auditInsert(ctx.session.user.id),
-        })
-        .returning({
-          id: players.id,
-          teamId: players.teamId,
-          firstName: players.firstName,
-          lastName: players.lastName,
-          number: players.number,
-          position: players.position,
-          isCaptain: players.isCaptain,
-          createdAt: players.createdAt,
-        });
+      const [player] = await db.transaction(async (tx) => {
+        if (input.isCaptain) {
+          await tx
+            .update(players)
+            .set({
+              isCaptain: false,
+              ...auditUpdate(ctx.session.user.id),
+            })
+            .where(
+              and(
+                eq(players.teamId, input.teamId),
+                eq(players.isCaptain, true),
+                isNull(players.deletedAt),
+                isNull(players.createdForGameId),
+              ),
+            );
+        }
+
+        return tx
+          .insert(players)
+          .values({
+            teamId: input.teamId,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            number: input.number,
+            position: input.position ?? null,
+            isCaptain: input.isCaptain,
+            ...auditInsert(ctx.session.user.id),
+          })
+          .returning({
+            id: players.id,
+            teamId: players.teamId,
+            firstName: players.firstName,
+            lastName: players.lastName,
+            number: players.number,
+            position: players.position,
+            isCaptain: players.isCaptain,
+            createdAt: players.createdAt,
+          });
+      });
 
       if (!player) {
         throw new TRPCError({
@@ -180,27 +199,47 @@ export const playersRouter = createTRPCRouter({
         });
       }
 
-      const [updated] = await db
-        .update(players)
-        .set({
-          firstName: input.firstName,
-          lastName: input.lastName,
-          number: input.number,
-          position: input.position ?? null,
-          isCaptain: input.isCaptain,
-          ...auditUpdate(ctx.session.user.id),
-        })
-        .where(and(eq(players.id, input.id), isNull(players.deletedAt)))
-        .returning({
-          id: players.id,
-          teamId: players.teamId,
-          firstName: players.firstName,
-          lastName: players.lastName,
-          number: players.number,
-          position: players.position,
-          isCaptain: players.isCaptain,
-          createdAt: players.createdAt,
-        });
+      const [updated] = await db.transaction(async (tx) => {
+        if (input.isCaptain) {
+          await tx
+            .update(players)
+            .set({
+              isCaptain: false,
+              ...auditUpdate(ctx.session.user.id),
+            })
+            .where(
+              and(
+                eq(players.teamId, teamId),
+                eq(players.isCaptain, true),
+                isNull(players.deletedAt),
+                isNull(players.createdForGameId),
+                ne(players.id, input.id),
+              ),
+            );
+        }
+
+        return tx
+          .update(players)
+          .set({
+            firstName: input.firstName,
+            lastName: input.lastName,
+            number: input.number,
+            position: input.position ?? null,
+            isCaptain: input.isCaptain,
+            ...auditUpdate(ctx.session.user.id),
+          })
+          .where(and(eq(players.id, input.id), isNull(players.deletedAt)))
+          .returning({
+            id: players.id,
+            teamId: players.teamId,
+            firstName: players.firstName,
+            lastName: players.lastName,
+            number: players.number,
+            position: players.position,
+            isCaptain: players.isCaptain,
+            createdAt: players.createdAt,
+          });
+      });
 
       if (!updated) {
         throw new TRPCError({
