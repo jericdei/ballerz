@@ -1,12 +1,13 @@
 "use client";
 
-import { Flag, Timer, Users } from "lucide-react";
+import { Timer, Users } from "lucide-react";
 
-import { zeroPlayerStatDeltas } from "@repo/shared";
+import { getRemainingTimeouts, zeroPlayerStatDeltas } from "@repo/shared";
 
 import { AddGuestPlayerDialog } from "@/components/statsheet/add-guest-player-dialog";
 import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import { StatsheetPlayerCard } from "@/components/statsheet/statsheet-player-card";
+import { TeamPeriodIndicators } from "@/components/statsheet/statsheet-team-period-indicators";
 import { Button } from "@/components/ui/button";
 import { isActiveGameStatus } from "@/lib/statsheet-utils";
 import { getTeamTheme } from "@/lib/team-colors";
@@ -31,6 +32,7 @@ export function StatsheetTeamColumn({
   score,
 }: StatsheetTeamColumnProps) {
   const rosters = useStatsheetStore((state) => state.rosters);
+  const game = useStatsheetStore((state) => state.game);
   const playerStats = useStatsheetStore((state) => state.playerStats);
   const teamPeriodStats = useStatsheetStore((state) => state.teamPeriodStats);
   const currentPeriod = useStatsheetStore((state) => state.currentPeriod);
@@ -48,6 +50,12 @@ export function StatsheetTeamColumn({
     timeoutsUsed: 0,
     teamFouls: 0,
   };
+  const timeoutsPerQuarter = game?.timeoutsPerQuarter ?? 2;
+  const remainingTimeouts = getRemainingTimeouts(
+    periodStats.timeoutsUsed,
+    timeoutsPerQuarter,
+  );
+  const canCallTimeout = canEditGame && remainingTimeouts > 0;
 
   return (
     <div
@@ -81,27 +89,23 @@ export function StatsheetTeamColumn({
           </p>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-lg border bg-background/80 px-2.5 py-1.5 text-xs">
-            <Timer className="size-3.5 text-amber-600 dark:text-amber-400" />
-            <span className="font-medium">{periodStats.timeoutsUsed}</span>
-            <span className="text-muted-foreground">timeouts</span>
-          </div>
-          <div className="flex items-center gap-1.5 rounded-lg border bg-background/80 px-2.5 py-1.5 text-xs">
-            <Flag className="size-3.5 text-orange-600 dark:text-orange-400" />
-            <span className="font-medium">{periodStats.teamFouls}</span>
-            <span className="text-muted-foreground">fouls</span>
-          </div>
+        <div className="mt-3 flex items-center gap-3">
+          <TeamPeriodIndicators teamColor={teamColor} teamId={teamId} />
           <Button
-            className="ml-auto h-8 gap-1.5"
-            disabled={!canEditGame}
+            className="ml-auto h-7 gap-1 px-2 text-xs"
+            disabled={!canCallTimeout}
             onClick={() => applyTimeout(teamId)}
             size="sm"
             type="button"
+            title={
+              remainingTimeouts === 0
+                ? "No timeouts remaining this quarter"
+                : undefined
+            }
             variant="outline"
           >
-            <Timer className="size-3.5" />
-            Timeout
+            <Timer className="size-3" />
+            TO
           </Button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import {
   addPlayerStats,
+  type ClockState,
   type GamePeriod,
   type GameStatEventType,
   type GameStatus,
@@ -48,6 +49,17 @@ export type StatsheetGame = {
   scheduledAt: Date | null;
   startedAt: Date | null;
   endedAt: Date | null;
+  quarterDurationSeconds: number;
+  overtimeDurationSeconds: number;
+  shotClockSeconds: number;
+  gameClockMs: number;
+  shotClockMs: number;
+  gameClockRunning: boolean;
+  shotClockRunning: boolean;
+  clockUpdatedAt: Date;
+  periodStarted: boolean;
+  timeoutsPerQuarter: number;
+  foulsBeforeBonus: number;
 };
 
 export type StatsheetEventLogEntry = {
@@ -58,6 +70,7 @@ export type StatsheetEventLogEntry = {
   teamId: number;
   period: GamePeriod;
   occurredAt: Date;
+  gameClockMs: number | null;
   playerName: string | null;
   label: string;
   synced: boolean;
@@ -71,6 +84,7 @@ type PendingEvent = {
   playerId?: number;
   period: GamePeriod;
   occurredAt: Date;
+  gameClockMs: number;
   playerName: string | null;
 };
 
@@ -115,6 +129,7 @@ type StatsheetSnapshot = {
     playerId: number | null;
     teamId: number;
     occurredAt: Date;
+    gameClockMs: number | null;
     reversesEventId: number | null;
     firstName: string | null;
     lastName: string | null;
@@ -139,7 +154,9 @@ type StatsheetStore = {
   eventLog: StatsheetEventLogEntry[];
   pendingEvents: PendingEvent[];
   dirty: boolean;
+  clock: ClockState | null;
   hydrate: (snapshot: StatsheetSnapshot) => void;
+  setClock: (clock: ClockState) => void;
   selectPlayer: (playerId: number | null) => void;
   setStatus: (status: GameStatus) => void;
   applyStat: (eventType: GameStatEventType) => void;
@@ -150,15 +167,38 @@ type StatsheetStore = {
     currentPeriod: GamePeriod;
     status: GameStatus;
     events: Array<{
+      clientId: string;
       eventType: GameStatEventType;
       teamId: number;
       playerId?: number;
       period: GamePeriod;
       occurredAt: Date;
+      gameClockMs: number;
     }>;
   };
   resetDirty: () => void;
 };
+
+function getEventGameClockMs(state: {
+  clock: ClockState | null;
+  game: StatsheetGame | null;
+}): number {
+  return state.clock?.gameClockMs ?? state.game?.gameClockMs ?? 0;
+}
+
+function mapClockFromGame(game: StatsheetGame): ClockState {
+  return {
+    quarterDurationSeconds: game.quarterDurationSeconds,
+    overtimeDurationSeconds: game.overtimeDurationSeconds,
+    shotClockSeconds: game.shotClockSeconds,
+    gameClockMs: game.gameClockMs,
+    shotClockMs: game.shotClockMs,
+    gameClockRunning: game.gameClockRunning,
+    shotClockRunning: game.shotClockRunning,
+    periodStarted: game.periodStarted,
+    updatedAt: game.clockUpdatedAt.toISOString(),
+  };
+}
 
 function mapPlayerStatsRow(
   row: StatsheetSnapshot["playerStats"][number],
@@ -228,6 +268,7 @@ function buildEventLog(
       teamId: event.teamId,
       period: event.period,
       occurredAt: event.occurredAt,
+      gameClockMs: event.gameClockMs,
       playerName:
         event.firstName && event.lastName
           ? formatPlayerName(event.firstName, event.lastName)
@@ -244,6 +285,7 @@ function buildEventLog(
     teamId: event.teamId,
     period: event.period,
     occurredAt: event.occurredAt,
+    gameClockMs: event.gameClockMs,
     playerName: event.playerName,
     label: formatStatEventLabel(event.eventType),
     synced: false,
@@ -319,6 +361,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
   eventLog: [],
   pendingEvents: [],
   dirty: false,
+  clock: null,
 
   hydrate: (snapshot) => {
     const playerStats: Record<number, PlayerStatDeltas> = {};
@@ -353,9 +396,12 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
       secondTeamScore: snapshot.game.secondTeamScore,
       pendingEvents: [],
       dirty: false,
+      clock: mapClockFromGame(snapshot.game),
       eventLog: buildEventLog(snapshot, [], status),
     });
   },
+
+  setClock: (clock) => set({ clock }),
 
   selectPlayer: (playerId) => set({ selectedPlayerId: playerId }),
 
@@ -389,6 +435,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
     const playerId = rosterPlayer?.playerId;
     const occurredAt = new Date();
     const clientId = crypto.randomUUID();
+    const gameClockMs = getEventGameClockMs(state);
 
     const pendingEvent: PendingEvent = {
       clientId,
@@ -397,6 +444,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
       playerId,
       period: state.currentPeriod,
       occurredAt,
+      gameClockMs,
       playerName: rosterPlayer
         ? formatPlayerName(rosterPlayer.firstName, rosterPlayer.lastName)
         : null,
@@ -412,6 +460,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
         teamId,
         period: current.currentPeriod,
         occurredAt,
+        gameClockMs,
         playerName: pendingEvent.playerName,
         label: formatStatEventLabel(eventType),
         synced: false,
@@ -443,8 +492,18 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
       return;
     }
 
+    const periodKey = `${teamId}:${state.currentPeriod}`;
+    const periodStats = state.teamPeriodStats[periodKey] ?? {
+      timeoutsUsed: 0,
+      teamFouls: 0,
+    };
+    if (periodStats.timeoutsUsed >= state.game.timeoutsPerQuarter) {
+      return;
+    }
+
     const occurredAt = new Date();
     const clientId = crypto.randomUUID();
+    const gameClockMs = getEventGameClockMs(state);
 
     const pendingEvent: PendingEvent = {
       clientId,
@@ -452,6 +511,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
       teamId,
       period: state.currentPeriod,
       occurredAt,
+      gameClockMs,
       playerName: null,
     };
 
@@ -476,6 +536,7 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
             teamId,
             period: current.currentPeriod,
             occurredAt,
+            gameClockMs,
             playerName: null,
             label: formatStatEventLabel("timeout"),
             synced: false,
@@ -535,11 +596,13 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
       currentPeriod: state.currentPeriod,
       status: state.status,
       events: state.pendingEvents.map((event) => ({
+        clientId: event.clientId,
         eventType: event.eventType,
         teamId: event.teamId,
         playerId: event.playerId,
         period: event.period,
         occurredAt: event.occurredAt,
+        gameClockMs: event.gameClockMs,
       })),
     };
   },

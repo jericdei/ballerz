@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { notFound, redirect } from "next/navigation";
+import { notFound, redirect, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 import { AppShell } from "@/components/app-shell";
 import { CrudPageLoading } from "@/components/crud/crud-page-loading";
 import { formatMatchup } from "@/components/games/game-labels";
+import { StatsheetClockPanel } from "@/components/statsheet/statsheet-clock-panel";
 import { StatsheetCourt } from "@/components/statsheet/statsheet-court";
 import { StatsheetEventLog } from "@/components/statsheet/statsheet-event-log";
 import { StatsheetHeaderActions } from "@/components/statsheet/statsheet-header-actions";
@@ -14,9 +15,14 @@ import {
   StatsheetMutationsProvider,
   useStatsheetMutations,
 } from "@/components/statsheet/statsheet-mutations-context";
+import { StatsheetLiveBoard } from "@/components/statsheet/statsheet-live-board";
 import { StatsheetScoreboard } from "@/components/statsheet/statsheet-scoreboard";
 import { StatsheetStatPanel } from "@/components/statsheet/statsheet-stat-panel";
 import { StatsheetStatusBadges } from "@/components/statsheet/statsheet-status-badges";
+import {
+  parseStatsheetView,
+  type StatsheetView,
+} from "@/components/statsheet/statsheet-view-toggle";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 import { useTRPC } from "@/trpc/client";
@@ -26,14 +32,43 @@ type StatsheetPageContentProps = {
   gameId: number;
 };
 
-function StatsheetContent() {
-  const { isBusy } = useStatsheetMutations();
+function StatsheetContent({
+  view,
+  leagueId,
+  gameId,
+}: {
+  view: StatsheetView;
+  leagueId: number;
+  gameId: number;
+}) {
+  const { isUndoing, isFinishing } = useStatsheetMutations();
+  const isBlocked = isUndoing || isFinishing;
+
+  if (view === "live") {
+    return <StatsheetLiveBoard gameId={gameId} leagueId={leagueId} />;
+  }
+
+  if (view === "clock") {
+    return (
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-hidden",
+          isBlocked && "pointer-events-none opacity-60",
+        )}
+      >
+        <StatsheetScoreboard hideCompactClock />
+        <div className="min-h-0 flex-1 overflow-hidden p-4 md:p-6">
+          <StatsheetClockPanel className="h-full w-full" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       className={cn(
         "flex min-h-0 flex-1 flex-col overflow-hidden",
-        isBusy && "pointer-events-none opacity-60",
+        isBlocked && "pointer-events-none opacity-60",
       )}
     >
       <StatsheetScoreboard />
@@ -57,7 +92,9 @@ export function StatsheetPageContent({
   gameId,
 }: StatsheetPageContentProps) {
   const trpc = useTRPC();
+  const searchParams = useSearchParams();
   const hydrate = useStatsheetStore((state) => state.hydrate);
+  const view = parseStatsheetView(searchParams.get("view"));
 
   const leagueQuery = useQuery(
     trpc.leagues.getById.queryOptions({ id: leagueId }),
@@ -88,6 +125,14 @@ export function StatsheetPageContent({
     : "Game";
 
   if (isLoading) {
+    if (view === "live") {
+      return (
+        <div className="flex min-h-svh items-center justify-center bg-black text-white">
+          <p className="text-lg text-white/60">Loading live board...</p>
+        </div>
+      );
+    }
+
     return (
       <AppShell
         breadcrumbs={[
@@ -100,6 +145,14 @@ export function StatsheetPageContent({
       >
         <CrudPageLoading message="Loading statsheet..." />
       </AppShell>
+    );
+  }
+
+  if (view === "live") {
+    return (
+      <StatsheetMutationsProvider gameId={gameId}>
+        <StatsheetContent gameId={gameId} leagueId={leagueId} view={view} />
+      </StatsheetMutationsProvider>
     );
   }
 
@@ -119,7 +172,7 @@ export function StatsheetPageContent({
         title={title}
         titleAddon={<StatsheetStatusBadges />}
       >
-        <StatsheetContent />
+        <StatsheetContent gameId={gameId} leagueId={leagueId} view={view} />
       </AppShell>
     </StatsheetMutationsProvider>
   );

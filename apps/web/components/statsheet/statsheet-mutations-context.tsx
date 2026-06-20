@@ -1,10 +1,24 @@
 "use client";
 
-import { createContext, type ReactNode, useContext, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { type GamePeriod, getNextGamePeriod } from "@repo/shared";
+import { type ClockCommand } from "@repo/shared";
 
+import {
+  type RealtimeConnectionStatus,
+  useStatsheetRealtime,
+} from "@/hooks/use-statsheet-realtime";
+import { startGameBuzzer, stopGameBuzzer } from "@/lib/play-game-buzzer";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 import { useTRPC } from "@/trpc/client";
 
@@ -13,19 +27,21 @@ type StatsheetSnapshot = Parameters<
 >[0];
 
 type StatsheetMutationsContextValue = {
+  sourceId: string;
   isBusy: boolean;
-  isSaving: boolean;
+  isSyncing: boolean;
   isUndoing: boolean;
   isFinishing: boolean;
-  isAdvancingPeriod: boolean;
-  advancingToPeriod: GamePeriod | null;
   undoingEventId: number | null;
   error: { message: string } | null;
-  save: () => void;
+  realtimeStatus: RealtimeConnectionStatus;
+  presence: number;
   finishGame: () => void;
-  advancePeriod: () => void;
   undoEvent: (eventId: number) => void;
   undoLast: () => void;
+  sendClockCommand: (command: ClockCommand) => void;
+  startBuzzer: () => void;
+  stopBuzzer: () => void;
 };
 
 const StatsheetMutationsContext =
@@ -65,14 +81,16 @@ export function StatsheetMutationsProvider({
 }: StatsheetMutationsProviderProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const sourceId = useMemo(() => crypto.randomUUID(), []);
   const eventLog = useStatsheetStore((state) => state.eventLog);
+  const pendingEvents = useStatsheetStore((state) => state.pendingEvents);
   const getSyncPayload = useStatsheetStore((state) => state.getSyncPayload);
   const hydrate = useStatsheetStore((state) => state.hydrate);
   const undoPending = useStatsheetStore((state) => state.undoPending);
   const [undoingEventId, setUndoingEventId] = useState<number | null>(null);
-  const [advancingToPeriod, setAdvancingToPeriod] = useState<GamePeriod | null>(
-    null,
-  );
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncInFlightRef = useRef(false);
+  const syncQueuedRef = useRef(false);
 
   const syncMutation = useMutation(
     trpc.statsheet.sync.mutationOptions({
@@ -111,23 +129,80 @@ export function StatsheetMutationsProvider({
     }),
   );
 
-  const isSaving = syncMutation.isPending;
+  const flushSync = useCallback(() => {
+    const payload = getSyncPayload();
+    if (payload.events.length === 0) {
+      return;
+    }
+
+    if (syncInFlightRef.current) {
+      syncQueuedRef.current = true;
+      return;
+    }
+
+    syncInFlightRef.current = true;
+    syncMutation.mutate(
+      {
+        gameId,
+        currentPeriod: payload.currentPeriod,
+        status: payload.status,
+        events: payload.events,
+        sourceId,
+      },
+      {
+        onSettled: () => {
+          syncInFlightRef.current = false;
+          if (syncQueuedRef.current || getSyncPayload().events.length > 0) {
+            syncQueuedRef.current = false;
+            flushSync();
+          }
+        },
+      },
+    );
+  }, [gameId, getSyncPayload, sourceId, syncMutation]);
+
+  const scheduleSync = useCallback(() => {
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    syncTimeoutRef.current = setTimeout(() => {
+      flushSync();
+    }, 250);
+  }, [flushSync]);
+
+  useEffect(() => {
+    if (pendingEvents.length === 0) {
+      return;
+    }
+
+    scheduleSync();
+  }, [pendingEvents, scheduleSync]);
+
+  useEffect(
+    () => () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
+  const {
+    status: realtimeStatus,
+    presence,
+    sendClockCommand,
+  } = useStatsheetRealtime({
+    gameId,
+    sourceId,
+  });
+
+  const isSyncing = syncMutation.isPending;
   const isFinishing = finishMutation.isPending;
   const isUndoing = reverseMutation.isPending;
-  const isAdvancingPeriod = advancingToPeriod != null && syncMutation.isPending;
-  const isBusy = isSaving || isFinishing || isUndoing;
+  const isBusy = isSyncing || isFinishing || isUndoing;
   const error =
     syncMutation.error ?? finishMutation.error ?? reverseMutation.error;
-
-  function save() {
-    const payload = getSyncPayload();
-    syncMutation.mutate({
-      gameId,
-      currentPeriod: payload.currentPeriod,
-      status: payload.status,
-      events: payload.events,
-    });
-  }
 
   function finishGame() {
     const payload = getSyncPayload();
@@ -135,26 +210,8 @@ export function StatsheetMutationsProvider({
       gameId,
       currentPeriod: payload.currentPeriod,
       events: payload.events,
+      sourceId,
     });
-  }
-
-  function advancePeriod() {
-    const payload = getSyncPayload();
-    const next = getNextGamePeriod(payload.currentPeriod);
-    if (!next) return;
-
-    setAdvancingToPeriod(next);
-    syncMutation.mutate(
-      {
-        gameId,
-        currentPeriod: next,
-        status: payload.status,
-        events: payload.events,
-      },
-      {
-        onSettled: () => setAdvancingToPeriod(null),
-      },
-    );
   }
 
   function undoEvent(eventId: number) {
@@ -176,22 +233,34 @@ export function StatsheetMutationsProvider({
     undoEvent(entry.id);
   }
 
+  function startBuzzer() {
+    void startGameBuzzer();
+    sendClockCommand({ action: "startBuzzer" });
+  }
+
+  function stopBuzzer() {
+    stopGameBuzzer();
+    sendClockCommand({ action: "stopBuzzer" });
+  }
+
   return (
     <StatsheetMutationsContext.Provider
       value={{
+        sourceId,
         isBusy,
-        isSaving,
+        isSyncing,
         isUndoing,
         isFinishing,
-        isAdvancingPeriod,
-        advancingToPeriod,
         undoingEventId,
         error,
-        save,
+        realtimeStatus,
+        presence,
         finishGame,
-        advancePeriod,
         undoEvent,
         undoLast,
+        sendClockCommand,
+        startBuzzer,
+        stopBuzzer,
       }}
     >
       {children}

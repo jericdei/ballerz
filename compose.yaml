@@ -17,5 +17,22 @@ services:
       timeout: 5s
       retries: 5
 
+  realtime:
+    build:
+      context: .
+      dockerfile: apps/realtime/Dockerfile
+    container_name: ballerz-realtime
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://ballerz:ballerz@postgres:5432/ballerz
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-random-secret}
+      REALTIME_PUBLISH_SECRET: ${REALTIME_PUBLISH_SECRET:-change-me-to-a-random-secret}
+      REALTIME_PORT: 3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres_data:

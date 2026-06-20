@@ -13,14 +13,28 @@ import {
 } from "@repo/shared";
 
 import { assertGameOwner, auditUpdate } from "./access";
+import { activeGameStatuses } from "./constants";
+import {
+  getClockUpdatesForGameFinish,
+  getClockUpdatesForPeriodAdvance,
+  getClockUpdatesForStatEvent,
+} from "./clock-rules";
+import { updateClockState } from "./clock-state";
 import { loadStatsheetState } from "./statsheet-state";
+import {
+  publishBuzzer,
+  publishClockState,
+  publishStatsheetUpdate,
+} from "./realtime-publish";
 
 export const pendingEventInput = z.object({
+  clientId: z.string().uuid(),
   eventType: z.enum(GAME_STAT_EVENT_TYPES),
   teamId: z.number().int().positive(),
   playerId: z.number().int().positive().optional(),
   period: z.enum(GAME_PERIODS),
   occurredAt: z.coerce.date(),
+  gameClockMs: z.number().int().min(0),
 });
 
 export const statsheetSyncInput = z.object({
@@ -28,14 +42,10 @@ export const statsheetSyncInput = z.object({
   currentPeriod: z.enum(GAME_PERIODS).optional(),
   status: z.enum(GAME_STATUSES).optional(),
   events: z.array(pendingEventInput),
+  sourceId: z.string().optional(),
 });
 
 export type StatsheetSyncInput = z.infer<typeof statsheetSyncInput>;
-
-export const activeGameStatuses = new Set<GameStatus>([
-  "in_progress",
-  "halftime",
-]);
 
 async function validatePendingEvent(
   gameId: number,
@@ -90,9 +100,45 @@ async function validatePendingEvent(
   }
 }
 
+async function validateTimeoutLimits(
+  gameId: number,
+  events: z.infer<typeof pendingEventInput>[],
+) {
+  const timeoutEvents = events.filter((event) => event.eventType === "timeout");
+  if (timeoutEvents.length === 0) {
+    return;
+  }
+
+  const state = await loadStatsheetState(gameId);
+  if (!state) {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Game not found",
+    });
+  }
+
+  const counts = new Map<string, number>();
+  for (const row of state.teamPeriodStats) {
+    counts.set(`${row.teamId}:${row.period}`, row.timeoutsUsed);
+  }
+
+  for (const event of timeoutEvents) {
+    const key = `${event.teamId}:${event.period}`;
+    const nextCount = (counts.get(key) ?? 0) + 1;
+    if (nextCount > state.game.timeoutsPerQuarter) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: `Team has already used all ${state.game.timeoutsPerQuarter} timeouts this quarter`,
+      });
+    }
+    counts.set(key, nextCount);
+  }
+}
+
 export async function applyStatsheetSync(
   userId: number,
   input: StatsheetSyncInput,
+  sourceId?: string,
 ) {
   const game = await assertGameOwner(input.gameId, userId);
 
@@ -127,6 +173,8 @@ export async function applyStatsheetSync(
     await validatePendingEvent(input.gameId, game, event);
   }
 
+  await validateTimeoutLimits(input.gameId, input.events);
+
   if (input.currentPeriod != null) {
     const savedPeriod = (game.currentPeriod ?? "q1") as GamePeriod;
     const savedIndex = getGamePeriodIndex(savedPeriod);
@@ -147,16 +195,19 @@ export async function applyStatsheetSync(
     }
   }
 
+  const savedPeriod = (game.currentPeriod ?? "q1") as GamePeriod;
+  const periodAdvanced =
+    input.currentPeriod != null && input.currentPeriod !== savedPeriod;
+
   const now = new Date();
+  let clockUpdatesApplied = false;
 
   await db.transaction(async (tx) => {
-    if (input.currentPeriod != null || input.status != null) {
+    if (periodAdvanced || input.status != null) {
       await tx
         .update(games)
         .set({
-          ...(input.currentPeriod != null
-            ? { currentPeriod: input.currentPeriod }
-            : {}),
+          ...(periodAdvanced ? { currentPeriod: input.currentPeriod } : {}),
           ...(input.status != null ? { status: input.status } : {}),
           ...(input.status === "final" ? { endedAt: now } : {}),
           ...auditUpdate(userId),
@@ -173,9 +224,57 @@ export async function applyStatsheetSync(
         playerId: event.playerId ?? null,
         recordedBy: userId,
         occurredAt: event.occurredAt,
+        gameClockMs: event.gameClockMs,
+        clientId: event.clientId,
       });
     }
   });
+
+  const [clockRow] = await db
+    .select({
+      quarterDurationSeconds: games.quarterDurationSeconds,
+      overtimeDurationSeconds: games.overtimeDurationSeconds,
+      shotClockSeconds: games.shotClockSeconds,
+      gameClockMs: games.gameClockMs,
+      shotClockMs: games.shotClockMs,
+    })
+    .from(games)
+    .where(and(eq(games.id, input.gameId), isNull(games.deletedAt)))
+    .limit(1);
+
+  if (clockRow) {
+    let clockPatch = {};
+
+    if (input.status === "final") {
+      clockPatch = getClockUpdatesForGameFinish();
+      clockUpdatesApplied = true;
+    } else if (periodAdvanced && input.currentPeriod != null) {
+      clockPatch = getClockUpdatesForPeriodAdvance(
+        input.currentPeriod,
+        clockRow.quarterDurationSeconds,
+        clockRow.shotClockSeconds,
+        clockRow.overtimeDurationSeconds,
+      );
+      clockUpdatesApplied = true;
+    }
+
+    for (const event of input.events) {
+      const eventClockPatch = getClockUpdatesForStatEvent(
+        event.eventType as GameStatEventType,
+        clockRow.shotClockSeconds,
+        clockRow.gameClockMs,
+        clockRow.shotClockMs,
+      );
+      if (Object.keys(eventClockPatch).length > 0) {
+        clockPatch = { ...clockPatch, ...eventClockPatch };
+        clockUpdatesApplied = true;
+      }
+    }
+
+    if (Object.keys(clockPatch).length > 0) {
+      await updateClockState(input.gameId, clockPatch);
+    }
+  }
 
   const state = await loadStatsheetState(input.gameId);
 
@@ -184,6 +283,15 @@ export async function applyStatsheetSync(
       code: "NOT_FOUND",
       message: "Game not found",
     });
+  }
+
+  await publishStatsheetUpdate(input.gameId, sourceId);
+  if (clockUpdatesApplied) {
+    await publishClockState(input.gameId);
+  }
+
+  if (input.events.some((event) => event.eventType === "timeout")) {
+    await publishBuzzer(input.gameId, "timeout");
   }
 
   return state;

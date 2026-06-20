@@ -1,6 +1,8 @@
 export const MIN_TEAMS_PER_LEAGUE = 2;
 export const MAX_PLAYERS_PER_TEAM = 15;
 
+import type { GameStatus } from "@repo/shared";
+
 export {
   DEFAULT_TEAM_COLOR,
   TEAM_COLOR_PRESETS,
@@ -23,3 +25,8 @@ export const GAME_TYPES = [
 ] as const;
 
 export type GameType = (typeof GAME_TYPES)[number];
+
+export const activeGameStatuses = new Set<GameStatus>([
+  "in_progress",
+  "halftime",
+]);

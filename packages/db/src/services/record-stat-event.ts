@@ -30,6 +30,8 @@ export type RecordStatEventInput = {
   relatedEventId?: number | null;
   recordedBy?: number | null;
   occurredAt?: Date;
+  gameClockMs?: number | null;
+  clientId?: string | null;
 };
 
 export type ReverseStatEventInput = {
@@ -250,6 +252,23 @@ export async function recordStatEventWithExecutor(
 ) {
   assertPlayerRequired(input.eventType, input.playerId);
 
+  if (input.clientId) {
+    const [existing] = await tx
+      .select({ id: gameStatEvents.id })
+      .from(gameStatEvents)
+      .where(
+        and(
+          eq(gameStatEvents.gameId, input.gameId),
+          eq(gameStatEvents.clientId, input.clientId),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      return existing;
+    }
+  }
+
   const teamContext = await getGameTeamContext(tx, input.gameId, input.teamId);
   const sequence = await getNextSequence(tx, input.gameId);
   const playerId = input.playerId ?? null;
@@ -266,6 +285,8 @@ export async function recordStatEventWithExecutor(
       relatedEventId: input.relatedEventId ?? null,
       recordedBy: input.recordedBy ?? null,
       occurredAt: input.occurredAt ?? new Date(),
+      gameClockMs: input.gameClockMs ?? null,
+      clientId: input.clientId ?? null,
     })
     .returning();
 

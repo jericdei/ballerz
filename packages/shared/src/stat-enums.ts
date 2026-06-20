@@ -16,6 +16,13 @@ export const GAME_PERIODS = [
   "ot3",
   "ot4",
   "ot5",
+  "ot6",
+  "ot7",
+  "ot8",
+  "ot9",
+  "ot10",
+  "ot11",
+  "ot12",
 ] as const;
 
 export const GAME_STAT_EVENT_TYPES = [

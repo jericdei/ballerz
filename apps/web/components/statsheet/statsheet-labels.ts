@@ -27,10 +27,6 @@ export function formatPeriodLabel(period: GamePeriod) {
   return period.toUpperCase();
 }
 
-export function formatAdvancePeriodLabel(period: GamePeriod) {
-  return `Start ${formatPeriodLabel(period)}`;
-}
-
 export function formatPlayerName(firstName: string, lastName: string) {
   return `${firstName} ${lastName}`;
 }

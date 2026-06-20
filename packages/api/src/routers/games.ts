@@ -13,6 +13,7 @@ import {
   auditInsert,
   auditUpdate,
 } from "../lib/access";
+import { publishStatsheetUpdate } from "../lib/realtime-publish";
 import {
   GAME_PERIODS,
   GAME_STATUSES,
@@ -66,6 +67,8 @@ const quickStartInput = z.object({
   firstTeamId: z.number().int().positive(),
   secondTeamId: z.number().int().positive(),
   type: gameTypeSchema.optional().default("regular"),
+  timeoutsPerQuarter: z.number().int().min(0).max(10).optional(),
+  foulsBeforeBonus: z.number().int().min(1).max(15).optional(),
 });
 
 function mapGameDetail(row: {
@@ -130,15 +133,35 @@ async function startGame(gameId: number, userId: number) {
 
   const now = new Date();
 
+  const [clockSettings] = await db
+    .select({
+      quarterDurationSeconds: games.quarterDurationSeconds,
+      shotClockSeconds: games.shotClockSeconds,
+    })
+    .from(games)
+    .where(and(eq(games.id, gameId), isNull(games.deletedAt)))
+    .limit(1);
+
+  const quarterDurationSeconds = clockSettings?.quarterDurationSeconds ?? 600;
+  const shotClockSeconds = clockSettings?.shotClockSeconds ?? 24;
+
   await db
     .update(games)
     .set({
       status: "in_progress",
       currentPeriod: "q1",
       startedAt: now,
+      gameClockMs: quarterDurationSeconds * 1000,
+      shotClockMs: shotClockSeconds * 1000,
+      gameClockRunning: false,
+      shotClockRunning: false,
+      periodStarted: false,
+      clockUpdatedAt: now,
       ...auditUpdate(userId),
     })
     .where(and(eq(games.id, gameId), isNull(games.deletedAt)));
+
+  await publishStatsheetUpdate(gameId);
 
   return { id: gameId };
 }
@@ -437,6 +460,12 @@ export const gamesRouter = createTRPCRouter({
           secondTeamId: input.secondTeamId,
           type: input.type,
           scheduledAt: new Date(),
+          ...(input.timeoutsPerQuarter != null
+            ? { timeoutsPerQuarter: input.timeoutsPerQuarter }
+            : {}),
+          ...(input.foulsBeforeBonus != null
+            ? { foulsBeforeBonus: input.foulsBeforeBonus }
+            : {}),
           ...auditInsert(ctx.session.user.id),
         })
         .returning({ id: games.id });

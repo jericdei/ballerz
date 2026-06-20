@@ -45,10 +45,38 @@
       "breakpoints": true
     },
     {
-      "idx": 6,
+      "idx": 8,
       "version": "7",
-      "when": 1781856652366,
-      "tag": "0006_steep_hemingway",
+      "when": 1782100000000,
+      "tag": "0008_game_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782200000000,
+      "tag": "0009_stat_event_game_clock",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782300000000,
+      "tag": "0010_extend_overtime_periods",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782400000000,
+      "tag": "0011_period_started",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1782500000000,
+      "tag": "0012_overtime_duration",
       "breakpoints": true
     }
   ]

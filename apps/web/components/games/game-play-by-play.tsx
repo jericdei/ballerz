@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Clock, History } from "lucide-react";
 
 import type { GamePeriod, GameStatEventType } from "@repo/shared";
+import { formatClockMs } from "@repo/shared";
 
 import {
   formatPeriodLabel,
@@ -22,6 +23,7 @@ type PlayByPlayEvent = {
   playerId: number | null;
   teamId: number;
   occurredAt: Date;
+  gameClockMs: number | null;
   firstName: string | null;
   lastName: string | null;
   reversesEventId: number | null;
@@ -128,12 +130,10 @@ export function GamePlayByPlay({
                   </p>
                   <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="size-3" />
-                    {formatPeriodLabel(event.period)} ·{" "}
-                    {event.occurredAt.toLocaleTimeString(undefined, {
-                      hour: "numeric",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    })}
+                    {formatPeriodLabel(event.period)}
+                    {event.gameClockMs != null ? (
+                      <> · {formatClockMs(event.gameClockMs)}</>
+                    ) : null}
                   </p>
                 </div>
               </div>

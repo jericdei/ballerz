@@ -34,6 +34,17 @@ export async function loadStatsheetState(gameId: number) {
       scheduledAt: games.scheduledAt,
       startedAt: games.startedAt,
       endedAt: games.endedAt,
+      quarterDurationSeconds: games.quarterDurationSeconds,
+      overtimeDurationSeconds: games.overtimeDurationSeconds,
+      shotClockSeconds: games.shotClockSeconds,
+      gameClockMs: games.gameClockMs,
+      shotClockMs: games.shotClockMs,
+      gameClockRunning: games.gameClockRunning,
+      shotClockRunning: games.shotClockRunning,
+      clockUpdatedAt: games.clockUpdatedAt,
+      periodStarted: games.periodStarted,
+      timeoutsPerQuarter: games.timeoutsPerQuarter,
+      foulsBeforeBonus: games.foulsBeforeBonus,
     })
     .from(games)
     .innerJoin(firstTeam, eq(games.firstTeamId, firstTeam.id))
@@ -83,6 +94,7 @@ export async function loadStatsheetState(gameId: number) {
       playerId: gameStatEvents.playerId,
       teamId: gameStatEvents.teamId,
       occurredAt: gameStatEvents.occurredAt,
+      gameClockMs: gameStatEvents.gameClockMs,
       reversesEventId: gameStatEvents.reversesEventId,
       firstName: players.firstName,
       lastName: players.lastName,

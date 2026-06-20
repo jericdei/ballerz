@@ -18,6 +18,13 @@ export const gamePeriodEnum = pgEnum("game_period", [
   "ot3",
   "ot4",
   "ot5",
+  "ot6",
+  "ot7",
+  "ot8",
+  "ot9",
+  "ot10",
+  "ot11",
+  "ot12",
 ]);
 
 export const gameStatEventTypeEnum = pgEnum("game_stat_event_type", [

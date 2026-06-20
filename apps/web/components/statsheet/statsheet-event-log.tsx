@@ -2,6 +2,8 @@
 
 import { Clock, History, Loader2, Undo2 } from "lucide-react";
 
+import { formatClockMs } from "@repo/shared";
+
 import { formatPeriodLabel } from "@/components/statsheet/statsheet-labels";
 import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import { getStatButtonConfig } from "@/components/statsheet/statsheet-stat-config";
@@ -70,8 +72,8 @@ function StatsheetEventLogRow({
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {!entry.synced ? (
-              <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                Pending
+              <Badge className="bg-sky-500/15 text-sky-700 dark:text-sky-300">
+                Syncing
               </Badge>
             ) : null}
             {entry.canUndo ? (
@@ -95,12 +97,10 @@ function StatsheetEventLogRow({
         </div>
         <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
           <Clock className="size-3" />
-          {formatPeriodLabel(entry.period)} ·{" "}
-          {entry.occurredAt.toLocaleTimeString(undefined, {
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-          })}
+          {formatPeriodLabel(entry.period)}
+          {entry.gameClockMs != null ? (
+            <> · {formatClockMs(entry.gameClockMs)}</>
+          ) : null}
         </p>
         {isUndoingThisRow && error ? (
           <p className="mt-1 text-xs text-destructive">{error.message}</p>

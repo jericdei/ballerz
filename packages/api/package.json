@@ -5,7 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./constants": "./src/lib/constants.ts"
+    "./constants": "./src/lib/constants.ts",
+    "./clock-state": "./src/lib/clock-state.ts",
+    "./statsheet-state": "./src/lib/statsheet-state.ts",
+    "./realtime-token": "./src/lib/realtime-token.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

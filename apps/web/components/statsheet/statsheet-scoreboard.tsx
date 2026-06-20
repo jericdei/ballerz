@@ -3,35 +3,34 @@
 import { Check, Clock } from "lucide-react";
 
 import {
+  getAutoAdvancePeriod,
   getGamePeriodIndex,
-  getNextGamePeriod,
   getVisibleGamePeriods,
 } from "@repo/shared";
 
-import {
-  formatAdvancePeriodLabel,
-  formatPeriodLabel,
-} from "@/components/statsheet/statsheet-labels";
-import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
-import { Button } from "@/components/ui/button";
-import { isActiveGameStatus } from "@/lib/statsheet-utils";
+import { formatPeriodLabel } from "@/components/statsheet/statsheet-labels";
+import { StatsheetClockPanel } from "@/components/statsheet/statsheet-clock-panel";
 import { getTeamTheme, withAlpha } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 
-export function StatsheetScoreboard() {
+export function StatsheetScoreboard({
+  hideCompactClock = false,
+}: {
+  hideCompactClock?: boolean;
+}) {
   const game = useStatsheetStore((state) => state.game);
   const currentPeriod = useStatsheetStore((state) => state.currentPeriod);
-  const status = useStatsheetStore((state) => state.status);
   const firstTeamScore = useStatsheetStore((state) => state.firstTeamScore);
   const secondTeamScore = useStatsheetStore((state) => state.secondTeamScore);
-  const { advancePeriod, advancingToPeriod, isAdvancingPeriod, isBusy } =
-    useStatsheetMutations();
 
   const currentIndex = getGamePeriodIndex(currentPeriod);
-  const nextPeriod = getNextGamePeriod(currentPeriod);
+  const nextPeriod = getAutoAdvancePeriod(
+    currentPeriod,
+    firstTeamScore,
+    secondTeamScore,
+  );
   const visiblePeriods = getVisibleGamePeriods(currentPeriod, nextPeriod);
-  const canAdvance = isActiveGameStatus(status) && nextPeriod != null;
 
   if (!game?.firstTeamId || !game.secondTeamId) {
     return null;
@@ -99,6 +98,8 @@ export function StatsheetScoreboard() {
               {formatPeriodLabel(currentPeriod)}
             </div>
 
+            {hideCompactClock ? null : <StatsheetClockPanel compact />}
+
             <div className="flex items-center gap-1 rounded-full border bg-card p-1 shadow-sm">
               <Clock className="mx-2 size-4 text-muted-foreground" />
               {visiblePeriods.map((period) => {
@@ -126,20 +127,6 @@ export function StatsheetScoreboard() {
               })}
             </div>
           </div>
-
-          {canAdvance && nextPeriod ? (
-            <Button
-              disabled={isBusy}
-              onClick={advancePeriod}
-              size="sm"
-              type="button"
-              variant="secondary"
-            >
-              {isAdvancingPeriod && advancingToPeriod
-                ? `Starting ${formatPeriodLabel(advancingToPeriod)}...`
-                : formatAdvancePeriodLabel(nextPeriod)}
-            </Button>
-          ) : null}
         </div>
       </div>
     </section>

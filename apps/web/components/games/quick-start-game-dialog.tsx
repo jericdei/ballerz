@@ -8,6 +8,10 @@ import { Zap } from "lucide-react";
 import { z } from "zod";
 
 import { GAME_TYPES } from "@repo/api/constants";
+import {
+  DEFAULT_FOULS_BEFORE_BONUS,
+  DEFAULT_TIMEOUTS_PER_QUARTER,
+} from "@repo/shared";
 
 import { formatGameType } from "@/components/games/game-labels";
 import type { TeamRow } from "@/components/teams/teams-table";
@@ -36,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useTransitionRouter } from "@/hooks/use-transition-router";
 import { guardDialogOpenChange } from "@/lib/dialog-open-change";
 import { useTRPC } from "@/trpc/client";
@@ -45,6 +50,8 @@ const formSchema = z
     firstTeamId: z.coerce.number().int().positive("Select a team"),
     secondTeamId: z.coerce.number().int().positive("Select a team"),
     type: z.enum(GAME_TYPES),
+    timeoutsPerQuarter: z.coerce.number().int().min(0).max(10),
+    foulsBeforeBonus: z.coerce.number().int().min(1).max(15),
   })
   .refine((values) => values.firstTeamId !== values.secondTeamId, {
     message: "Teams must be different",
@@ -74,6 +81,8 @@ export function QuickStartGameDialog({
       firstTeamId: teams[0]?.id ?? 0,
       secondTeamId: teams[1]?.id ?? 0,
       type: "regular",
+      timeoutsPerQuarter: DEFAULT_TIMEOUTS_PER_QUARTER,
+      foulsBeforeBonus: DEFAULT_FOULS_BEFORE_BONUS,
     },
   });
 
@@ -98,6 +107,8 @@ export function QuickStartGameDialog({
       firstTeamId: values.firstTeamId,
       secondTeamId: values.secondTeamId,
       type: values.type,
+      timeoutsPerQuarter: values.timeoutsPerQuarter,
+      foulsBeforeBonus: values.foulsBeforeBonus,
     });
   }
 
@@ -208,6 +219,34 @@ export function QuickStartGameDialog({
                 </FormItem>
               )}
             />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="timeoutsPerQuarter"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Timeouts per quarter</FormLabel>
+                    <FormControl>
+                      <Input min={0} type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="foulsBeforeBonus"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Team fouls for bonus</FormLabel>
+                    <FormControl>
+                      <Input min={1} type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
             {quickStartMutation.error ? (
               <p className="text-sm text-destructive">
                 {quickStartMutation.error.message}

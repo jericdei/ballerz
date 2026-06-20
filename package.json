@@ -4,7 +4,10 @@
   "scripts": {
     "build": "turbo run build",
     "start": "turbo run start --filter=web",
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --filter=web",
+    "dev:all": "turbo run dev --filter=web --filter=realtime",
+    "dev:web": "turbo run dev --filter=web",
+    "dev:realtime": "turbo run dev --filter=realtime",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md}\"",

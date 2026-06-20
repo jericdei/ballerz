@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   index,
   pgTable,
+  text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -28,6 +29,7 @@ export const gameStatEvents = pgTable(
     occurredAt: timestamp("occurred_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    gameClockMs: intCol("game_clock_ms"),
     period: gamePeriodEnum("period").notNull(),
     eventType: gameStatEventTypeEnum("event_type").notNull(),
     playerId: intCol("player_id").references(() => players.id, {
@@ -47,6 +49,7 @@ export const gameStatEvents = pgTable(
     recordedBy: intCol("recorded_by").references(() => users.id, {
       onDelete: "set null",
     }),
+    clientId: text("client_id"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -58,6 +61,10 @@ export const gameStatEvents = pgTable(
     ),
     index("game_stat_events_game_id_period_idx").on(table.gameId, table.period),
     index("game_stat_events_reverses_event_id_idx").on(table.reversesEventId),
+    uniqueIndex("game_stat_events_game_id_client_id_unique").on(
+      table.gameId,
+      table.clientId,
+    ),
   ],
 );
 

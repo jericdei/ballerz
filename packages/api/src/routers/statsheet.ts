@@ -6,15 +6,25 @@ import {
   db,
   gameRosters,
   gameStatEvents,
+  games,
   players,
   reverseStatEvent,
 } from "@repo/db";
-import { GAME_PERIODS } from "@repo/shared";
+import {
+  GAME_PERIODS,
+  getPeriodDurationSeconds,
+  type GamePeriod,
+} from "@repo/shared";
 
-import { assertGameOwner, auditInsert } from "../lib/access";
+import { assertGameOwner, auditInsert, auditUpdate } from "../lib/access";
+import { loadCanEditClockConfigs } from "../lib/clock-state";
+import { activeGameStatuses } from "../lib/constants";
 import { loadStatsheetState } from "../lib/statsheet-state";
 import {
-  activeGameStatuses,
+  publishClockState,
+  publishStatsheetUpdate,
+} from "../lib/realtime-publish";
+import {
   applyStatsheetSync,
   pendingEventInput,
   statsheetSyncInput,
@@ -45,6 +55,14 @@ const finishInput = z.object({
   events: z.array(pendingEventInput),
 });
 
+const updateRulesInput = z.object({
+  gameId: z.number().int().positive(),
+  timeoutsPerQuarter: z.number().int().min(0).max(10).optional(),
+  foulsBeforeBonus: z.number().int().min(1).max(15).optional(),
+  quarterDurationSeconds: z.number().int().min(60).max(3600).optional(),
+  overtimeDurationSeconds: z.number().int().min(60).max(3600).optional(),
+});
+
 export const statsheetRouter = createTRPCRouter({
   getState: protectedProcedure
     .input(gameIdInput)
@@ -66,16 +84,22 @@ export const statsheetRouter = createTRPCRouter({
   sync: protectedProcedure
     .input(statsheetSyncInput)
     .mutation(async ({ ctx, input }) => {
-      return applyStatsheetSync(ctx.session.user.id, input);
+      const { sourceId, ...syncInput } = input;
+      return applyStatsheetSync(ctx.session.user.id, syncInput, sourceId);
     }),
 
   finish: protectedProcedure
-    .input(finishInput)
+    .input(finishInput.extend({ sourceId: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
-      return applyStatsheetSync(ctx.session.user.id, {
-        ...input,
-        status: "final",
-      });
+      const { sourceId, ...finishPayload } = input;
+      return applyStatsheetSync(
+        ctx.session.user.id,
+        {
+          ...finishPayload,
+          status: "final",
+        },
+        sourceId,
+      );
     }),
 
   reverse: protectedProcedure
@@ -127,6 +151,8 @@ export const statsheetRouter = createTRPCRouter({
           message: "Game not found",
         });
       }
+
+      await publishStatsheetUpdate(input.gameId);
 
       return state;
     }),
@@ -215,6 +241,101 @@ export const statsheetRouter = createTRPCRouter({
           message: "Game not found",
         });
       }
+
+      await publishStatsheetUpdate(input.gameId);
+
+      return state;
+    }),
+
+  updateRules: protectedProcedure
+    .input(updateRulesInput)
+    .mutation(async ({ ctx, input }) => {
+      await assertGameOwner(input.gameId, ctx.session.user.id);
+
+      if (!(await loadCanEditClockConfigs(input.gameId))) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Game settings can only be changed at the start of a quarter with clocks stopped",
+        });
+      }
+
+      if (
+        input.timeoutsPerQuarter == null &&
+        input.foulsBeforeBonus == null &&
+        input.quarterDurationSeconds == null &&
+        input.overtimeDurationSeconds == null
+      ) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No rule changes provided",
+        });
+      }
+
+      const [game] = await db
+        .select({
+          currentPeriod: games.currentPeriod,
+          quarterDurationSeconds: games.quarterDurationSeconds,
+          overtimeDurationSeconds: games.overtimeDurationSeconds,
+        })
+        .from(games)
+        .where(and(eq(games.id, input.gameId), isNull(games.deletedAt)))
+        .limit(1);
+
+      if (!game) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Game not found",
+        });
+      }
+
+      const quarterDurationSeconds =
+        input.quarterDurationSeconds ?? game.quarterDurationSeconds;
+      const overtimeDurationSeconds =
+        input.overtimeDurationSeconds ?? game.overtimeDurationSeconds;
+      const period = (game.currentPeriod ?? "q1") as GamePeriod;
+      const gameClockMs =
+        getPeriodDurationSeconds(
+          period,
+          quarterDurationSeconds,
+          overtimeDurationSeconds,
+        ) * 1000;
+      const now = new Date();
+
+      await db
+        .update(games)
+        .set({
+          ...(input.quarterDurationSeconds != null
+            ? { quarterDurationSeconds: input.quarterDurationSeconds }
+            : {}),
+          ...(input.overtimeDurationSeconds != null
+            ? { overtimeDurationSeconds: input.overtimeDurationSeconds }
+            : {}),
+          ...(input.timeoutsPerQuarter != null
+            ? { timeoutsPerQuarter: input.timeoutsPerQuarter }
+            : {}),
+          ...(input.foulsBeforeBonus != null
+            ? { foulsBeforeBonus: input.foulsBeforeBonus }
+            : {}),
+          gameClockMs,
+          gameClockRunning: false,
+          shotClockRunning: false,
+          clockUpdatedAt: now,
+          ...auditUpdate(ctx.session.user.id),
+        })
+        .where(and(eq(games.id, input.gameId), isNull(games.deletedAt)));
+
+      const state = await loadStatsheetState(input.gameId);
+
+      if (!state) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Game not found",
+        });
+      }
+
+      await publishStatsheetUpdate(input.gameId);
+      await publishClockState(input.gameId);
 
       return state;
     }),

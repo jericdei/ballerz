@@ -3,6 +3,22 @@ import { GAME_PERIODS, type GamePeriod } from "./stat-enums";
 const REGULATION_PERIOD_COUNT = 4;
 const OT1_INDEX = REGULATION_PERIOD_COUNT;
 
+export const DEFAULT_OVERTIME_DURATION_SECONDS = 300;
+
+export function isOvertimePeriod(period: GamePeriod): boolean {
+  return getGamePeriodIndex(period) >= OT1_INDEX;
+}
+
+export function getPeriodDurationSeconds(
+  period: GamePeriod,
+  quarterDurationSeconds: number,
+  overtimeDurationSeconds = DEFAULT_OVERTIME_DURATION_SECONDS,
+): number {
+  return isOvertimePeriod(period)
+    ? overtimeDurationSeconds
+    : quarterDurationSeconds;
+}
+
 export function getGamePeriodIndex(period: GamePeriod) {
   return GAME_PERIODS.indexOf(period);
 }
@@ -13,6 +29,29 @@ export function getNextGamePeriod(period: GamePeriod): GamePeriod | null {
     return null;
   }
   return GAME_PERIODS[index + 1] ?? null;
+}
+
+export function getAutoAdvancePeriod(
+  currentPeriod: GamePeriod,
+  firstTeamScore: number,
+  secondTeamScore: number,
+): GamePeriod | null {
+  const index = getGamePeriodIndex(currentPeriod);
+  if (index === -1) {
+    return null;
+  }
+
+  const isTied = firstTeamScore === secondTeamScore;
+
+  if (index < REGULATION_PERIOD_COUNT - 1) {
+    return getNextGamePeriod(currentPeriod);
+  }
+
+  if (isTied) {
+    return getNextGamePeriod(currentPeriod);
+  }
+
+  return null;
 }
 
 export function getVisibleGamePeriods(
