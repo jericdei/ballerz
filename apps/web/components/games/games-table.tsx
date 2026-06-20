@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
+import { ClipboardList, Table2 } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
 import {
@@ -16,6 +17,7 @@ import { formatScheduledAt } from "@/components/games/schedule-datetime";
 import { StartGameButton } from "@/components/games/start-game-button";
 import type { TeamRow } from "@/components/teams/teams-table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export type GameRow = {
   id: number;
@@ -38,7 +40,20 @@ type GamesTableProps = {
   teams: TeamRow[];
 };
 
-const openableStatuses = new Set(["in_progress", "halftime", "final"]);
+const liveStatuses = new Set<GameRow["status"]>(["in_progress", "halftime"]);
+const finalStatus: GameRow["status"] = "final";
+
+function getGameHref(leagueId: number, game: GameRow) {
+  if (liveStatuses.has(game.status)) {
+    return `/leagues/${leagueId}/games/${game.id}`;
+  }
+
+  if (game.status === finalStatus) {
+    return `/leagues/${leagueId}/games/${game.id}/box-score`;
+  }
+
+  return null;
+}
 
 function statusBadgeClass(status: GameRow["status"]) {
   switch (status) {
@@ -102,13 +117,23 @@ export function GamesTable({ data, leagueId, teams }: GamesTableProps) {
           onClick={(event) => event.stopPropagation()}
         >
           <StartGameButton game={row.original} leagueId={leagueId} />
-          {openableStatuses.has(row.original.status) ? (
-            <Link
-              className="text-sm text-primary hover:underline"
-              href={`/leagues/${leagueId}/games/${row.original.id}`}
-            >
-              Statsheet
-            </Link>
+          {liveStatuses.has(row.original.status) ? (
+            <Button asChild className="gap-1.5" size="sm" variant="outline">
+              <Link href={`/leagues/${leagueId}/games/${row.original.id}`}>
+                <ClipboardList className="size-3.5" />
+                Statsheet
+              </Link>
+            </Button>
+          ) : null}
+          {row.original.status === finalStatus ? (
+            <Button asChild className="gap-1.5" size="sm" variant="outline">
+              <Link
+                href={`/leagues/${leagueId}/games/${row.original.id}/box-score`}
+              >
+                <Table2 className="size-3.5" />
+                Box score
+              </Link>
+            </Button>
           ) : null}
           <GameRowActions
             game={row.original}
@@ -126,8 +151,9 @@ export function GamesTable({ data, leagueId, teams }: GamesTableProps) {
       data={data}
       emptyMessage="No games scheduled yet."
       onRowClick={(row) => {
-        if (openableStatuses.has(row.status)) {
-          router.push(`/leagues/${leagueId}/games/${row.id}`);
+        const href = getGameHref(leagueId, row);
+        if (href) {
+          router.push(href);
         }
       }}
     />

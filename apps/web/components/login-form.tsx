@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 
 import { ModeToggle } from "@/components/mode-toggle";
+import { SiteBrand } from "@/components/site-brand";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -49,6 +50,9 @@ export function LoginForm() {
 
   return (
     <main className="relative flex min-h-screen items-center justify-center p-8">
+      <div className="absolute top-4 left-4">
+        <SiteBrand />
+      </div>
       <div className="absolute top-4 right-4">
         <ModeToggle />
       </div>

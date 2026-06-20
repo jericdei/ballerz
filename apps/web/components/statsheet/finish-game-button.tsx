@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { Flag } from "lucide-react";
 
+import { isFinishableGamePeriod } from "@repo/shared";
+
 import { formatMatchup } from "@/components/games/game-labels";
 import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
 import {
@@ -23,6 +25,7 @@ import { useStatsheetStore } from "@/stores/use-statsheet-store";
 
 export function FinishGameButton() {
   const game = useStatsheetStore((state) => state.game);
+  const currentPeriod = useStatsheetStore((state) => state.currentPeriod);
   const status = useStatsheetStore((state) => state.status);
   const { isBusy, isFinishing, finishGame, error } = useStatsheetMutations();
   const [open, setOpen] = useState(false);
@@ -33,7 +36,11 @@ export function FinishGameButton() {
     }
   }, [status]);
 
-  if (!game || !isActiveGameStatus(status)) {
+  if (
+    !game ||
+    !isActiveGameStatus(status) ||
+    !isFinishableGamePeriod(currentPeriod)
+  ) {
     return null;
   }
 

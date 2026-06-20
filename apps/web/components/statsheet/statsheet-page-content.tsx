@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 import { AppShell } from "@/components/app-shell";
@@ -76,6 +76,10 @@ export function StatsheetPageContent({
 
   if (leagueQuery.isError || statsheetQuery.isError) {
     notFound();
+  }
+
+  if (statsheetQuery.data?.game.status === "final") {
+    redirect(`/leagues/${leagueId}/games/${gameId}/box-score`);
   }
 
   const snapshot = statsheetQuery.data;

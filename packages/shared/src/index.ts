@@ -1,4 +1,9 @@
-export { getGamePeriodIndex, getNextGamePeriod } from "./game-periods";
+export {
+  getGamePeriodIndex,
+  getNextGamePeriod,
+  getVisibleGamePeriods,
+  isFinishableGamePeriod,
+} from "./game-periods";
 export {
   GAME_PERIODS,
   GAME_STAT_EVENT_TYPES,

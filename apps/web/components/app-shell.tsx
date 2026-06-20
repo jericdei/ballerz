@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 
 import { ModeToggle } from "@/components/mode-toggle";
+import { SiteBrand } from "@/components/site-brand";
 import { Button } from "@/components/ui/button";
 
 export type BreadcrumbItem = {
@@ -47,7 +48,8 @@ export function AppShell({
             : "flex items-start justify-between gap-4"
         }
       >
-        <div className="space-y-2">
+        <div className="min-w-0 flex-1 space-y-2">
+          <SiteBrand />
           {breadcrumbs.length > 0 ? (
             <nav className="text-sm text-muted-foreground">
               {breadcrumbs.map((item, index) => (

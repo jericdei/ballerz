@@ -187,11 +187,11 @@ export function getStatButtonConfig(eventType: GameStatEventType) {
 
 export const statCategories: StatCategory[] = [
   "scoring",
+  "rebounds",
   "playmaking",
   "defense",
   "fouls",
   "turnovers",
-  "rebounds",
 ];
 
 export function getStatsByCategory(category: StatCategory) {

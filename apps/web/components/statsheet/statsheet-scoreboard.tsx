@@ -3,9 +3,9 @@
 import { Check, Clock } from "lucide-react";
 
 import {
-  GAME_PERIODS,
   getGamePeriodIndex,
   getNextGamePeriod,
+  getVisibleGamePeriods,
 } from "@repo/shared";
 
 import {
@@ -30,6 +30,7 @@ export function StatsheetScoreboard() {
 
   const currentIndex = getGamePeriodIndex(currentPeriod);
   const nextPeriod = getNextGamePeriod(currentPeriod);
+  const visiblePeriods = getVisibleGamePeriods(currentPeriod, nextPeriod);
   const canAdvance = isActiveGameStatus(status) && nextPeriod != null;
 
   if (!game?.firstTeamId || !game.secondTeamId) {
@@ -100,7 +101,7 @@ export function StatsheetScoreboard() {
 
             <div className="flex items-center gap-1 rounded-full border bg-card p-1 shadow-sm">
               <Clock className="mx-2 size-4 text-muted-foreground" />
-              {GAME_PERIODS.map((period) => {
+              {visiblePeriods.map((period) => {
                 const index = getGamePeriodIndex(period);
                 const isPast = index < currentIndex;
                 const isCurrent = period === currentPeriod;

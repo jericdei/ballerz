@@ -9,6 +9,7 @@ import {
   GAME_STAT_EVENT_TYPES,
   GAME_STATUSES,
   getGamePeriodIndex,
+  isFinishableGamePeriod,
 } from "@repo/shared";
 
 import { assertGameOwner, auditUpdate } from "./access";
@@ -100,6 +101,19 @@ export async function applyStatsheetSync(
       code: "BAD_REQUEST",
       message: "Only in-progress games can be finished",
     });
+  }
+
+  if (input.status === "final") {
+    const finishPeriod = (input.currentPeriod ??
+      game.currentPeriod ??
+      "q1") as GamePeriod;
+
+    if (!isFinishableGamePeriod(finishPeriod)) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Game can only be finished in the 4th quarter or overtime",
+      });
+    }
   }
 
   if (input.events.length > 0 && !activeGameStatuses.has(game.status)) {
