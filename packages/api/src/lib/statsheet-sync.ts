@@ -8,6 +8,7 @@ import {
   GAME_PERIODS,
   GAME_STAT_EVENT_TYPES,
   GAME_STATUSES,
+  getGamePeriodIndex,
 } from "@repo/shared";
 
 import { assertGameOwner, auditUpdate } from "./access";
@@ -110,6 +111,26 @@ export async function applyStatsheetSync(
 
   for (const event of input.events) {
     await validatePendingEvent(input.gameId, game, event);
+  }
+
+  if (input.currentPeriod != null) {
+    const savedPeriod = (game.currentPeriod ?? "q1") as GamePeriod;
+    const savedIndex = getGamePeriodIndex(savedPeriod);
+    const nextIndex = getGamePeriodIndex(input.currentPeriod);
+
+    if (nextIndex < savedIndex) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Cannot go back to a previous period",
+      });
+    }
+
+    if (nextIndex > savedIndex + 1) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Can only advance one period at a time",
+      });
+    }
   }
 
   const now = new Date();

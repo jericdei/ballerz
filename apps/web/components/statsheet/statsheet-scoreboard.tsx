@@ -1,11 +1,19 @@
 "use client";
 
-import { Clock } from "lucide-react";
+import { Check, Clock } from "lucide-react";
 
-import { GAME_PERIODS } from "@repo/shared";
+import {
+  GAME_PERIODS,
+  getGamePeriodIndex,
+  getNextGamePeriod,
+} from "@repo/shared";
 
-import { formatPeriodLabel } from "@/components/statsheet/statsheet-labels";
+import {
+  formatAdvancePeriodLabel,
+  formatPeriodLabel,
+} from "@/components/statsheet/statsheet-labels";
 import { useStatsheetMutations } from "@/components/statsheet/statsheet-mutations-context";
+import { Button } from "@/components/ui/button";
 import { isActiveGameStatus } from "@/lib/statsheet-utils";
 import { getTeamTheme, withAlpha } from "@/lib/team-colors";
 import { cn } from "@/lib/utils";
@@ -15,11 +23,14 @@ export function StatsheetScoreboard() {
   const game = useStatsheetStore((state) => state.game);
   const currentPeriod = useStatsheetStore((state) => state.currentPeriod);
   const status = useStatsheetStore((state) => state.status);
-  const setPeriod = useStatsheetStore((state) => state.setPeriod);
   const firstTeamScore = useStatsheetStore((state) => state.firstTeamScore);
   const secondTeamScore = useStatsheetStore((state) => state.secondTeamScore);
-  const { isBusy } = useStatsheetMutations();
-  const canEditPeriod = isActiveGameStatus(status) && !isBusy;
+  const { advancePeriod, advancingToPeriod, isAdvancingPeriod, isBusy } =
+    useStatsheetMutations();
+
+  const currentIndex = getGamePeriodIndex(currentPeriod);
+  const nextPeriod = getNextGamePeriod(currentPeriod);
+  const canAdvance = isActiveGameStatus(status) && nextPeriod != null;
 
   if (!game?.firstTeamId || !game.secondTeamId) {
     return null;
@@ -78,28 +89,56 @@ export function StatsheetScoreboard() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <div className="flex items-center gap-1 rounded-full border bg-card p-1 shadow-sm">
-            <Clock className="mx-2 size-4 text-muted-foreground" />
-            {GAME_PERIODS.map((period) => (
-              <button
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
-                  currentPeriod === period
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  isBusy && "pointer-events-none opacity-50",
-                  !canEditPeriod && "pointer-events-none opacity-50",
-                )}
-                disabled={!canEditPeriod}
-                key={period}
-                onClick={() => setPeriod(period)}
-                type="button"
-              >
-                {formatPeriodLabel(period)}
-              </button>
-            ))}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div
+              aria-label={`Current period: ${formatPeriodLabel(currentPeriod)}`}
+              className="rounded-full bg-primary px-4 py-1.5 text-sm font-semibold text-primary-foreground shadow-sm"
+            >
+              {formatPeriodLabel(currentPeriod)}
+            </div>
+
+            <div className="flex items-center gap-1 rounded-full border bg-card p-1 shadow-sm">
+              <Clock className="mx-2 size-4 text-muted-foreground" />
+              {GAME_PERIODS.map((period) => {
+                const index = getGamePeriodIndex(period);
+                const isPast = index < currentIndex;
+                const isCurrent = period === currentPeriod;
+                const isFuture = index > currentIndex;
+
+                return (
+                  <div
+                    aria-current={isCurrent ? "step" : undefined}
+                    className={cn(
+                      "flex items-center gap-1 rounded-full px-2 py-1.5 text-xs font-semibold",
+                      isCurrent &&
+                        "bg-primary text-primary-foreground shadow-sm",
+                      isPast && "text-muted-foreground",
+                      isFuture && "text-muted-foreground/40",
+                    )}
+                    key={period}
+                  >
+                    {isPast ? <Check aria-hidden className="size-3" /> : null}
+                    {formatPeriodLabel(period)}
+                  </div>
+                );
+              })}
+            </div>
           </div>
+
+          {canAdvance && nextPeriod ? (
+            <Button
+              disabled={isBusy}
+              onClick={advancePeriod}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              {isAdvancingPeriod && advancingToPeriod
+                ? `Starting ${formatPeriodLabel(advancingToPeriod)}...`
+                : formatAdvancePeriodLabel(nextPeriod)}
+            </Button>
+          ) : null}
         </div>
       </div>
     </section>

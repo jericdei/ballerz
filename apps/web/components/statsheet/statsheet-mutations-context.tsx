@@ -3,6 +3,8 @@
 import { createContext, type ReactNode, useContext, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { type GamePeriod, getNextGamePeriod } from "@repo/shared";
+
 import { useStatsheetStore } from "@/stores/use-statsheet-store";
 import { useTRPC } from "@/trpc/client";
 
@@ -15,10 +17,13 @@ type StatsheetMutationsContextValue = {
   isSaving: boolean;
   isUndoing: boolean;
   isFinishing: boolean;
+  isAdvancingPeriod: boolean;
+  advancingToPeriod: GamePeriod | null;
   undoingEventId: number | null;
   error: { message: string } | null;
   save: () => void;
   finishGame: () => void;
+  advancePeriod: () => void;
   undoEvent: (eventId: number) => void;
   undoLast: () => void;
 };
@@ -65,6 +70,9 @@ export function StatsheetMutationsProvider({
   const hydrate = useStatsheetStore((state) => state.hydrate);
   const undoPending = useStatsheetStore((state) => state.undoPending);
   const [undoingEventId, setUndoingEventId] = useState<number | null>(null);
+  const [advancingToPeriod, setAdvancingToPeriod] = useState<GamePeriod | null>(
+    null,
+  );
 
   const syncMutation = useMutation(
     trpc.statsheet.sync.mutationOptions({
@@ -106,6 +114,7 @@ export function StatsheetMutationsProvider({
   const isSaving = syncMutation.isPending;
   const isFinishing = finishMutation.isPending;
   const isUndoing = reverseMutation.isPending;
+  const isAdvancingPeriod = advancingToPeriod != null && syncMutation.isPending;
   const isBusy = isSaving || isFinishing || isUndoing;
   const error =
     syncMutation.error ?? finishMutation.error ?? reverseMutation.error;
@@ -127,6 +136,25 @@ export function StatsheetMutationsProvider({
       currentPeriod: payload.currentPeriod,
       events: payload.events,
     });
+  }
+
+  function advancePeriod() {
+    const payload = getSyncPayload();
+    const next = getNextGamePeriod(payload.currentPeriod);
+    if (!next) return;
+
+    setAdvancingToPeriod(next);
+    syncMutation.mutate(
+      {
+        gameId,
+        currentPeriod: next,
+        status: payload.status,
+        events: payload.events,
+      },
+      {
+        onSettled: () => setAdvancingToPeriod(null),
+      },
+    );
   }
 
   function undoEvent(eventId: number) {
@@ -155,10 +183,13 @@ export function StatsheetMutationsProvider({
         isSaving,
         isUndoing,
         isFinishing,
+        isAdvancingPeriod,
+        advancingToPeriod,
         undoingEventId,
         error,
         save,
         finishGame,
+        advancePeriod,
         undoEvent,
         undoLast,
       }}

@@ -141,7 +141,6 @@ type StatsheetStore = {
   dirty: boolean;
   hydrate: (snapshot: StatsheetSnapshot) => void;
   selectPlayer: (playerId: number | null) => void;
-  setPeriod: (period: GamePeriod) => void;
   setStatus: (status: GameStatus) => void;
   applyStat: (eventType: GameStatEventType) => void;
   applyTimeout: (teamId: number) => void;
@@ -359,12 +358,6 @@ export const useStatsheetStore = create<StatsheetStore>((set, get) => ({
   },
 
   selectPlayer: (playerId) => set({ selectedPlayerId: playerId }),
-
-  setPeriod: (period) =>
-    set((state) => {
-      const next = { ...state, currentPeriod: period };
-      return { currentPeriod: period, dirty: computeDirty(next) };
-    }),
 
   setStatus: (status) =>
     set((state) => {
