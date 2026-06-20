@@ -89,7 +89,7 @@ function ClockDisplay({
   return (
     <div
       className={cn(
-        "flex flex-1 flex-col items-center justify-center rounded-xl bg-muted/40 p-4 text-center md:p-5",
+        "flex flex-1 flex-col items-center justify-center rounded-xl bg-muted/40 p-3 text-center sm:p-4 md:p-5",
         dimmed && "opacity-50",
         className,
       )}
@@ -99,7 +99,7 @@ function ClockDisplay({
       </p>
       <p
         className={cn(
-          "font-mono text-4xl font-bold tabular-nums sm:text-5xl md:text-6xl lg:text-7xl",
+          "font-mono text-3xl font-bold tabular-nums sm:text-4xl md:text-6xl lg:text-7xl",
           valueClassName,
         )}
       >
@@ -236,7 +236,7 @@ export function StatsheetClockPanel({
             Clocks
           </h2>
         </div>
-        <div className="flex min-h-0 flex-1 flex-col gap-3 md:gap-4">
+        <div className="grid min-h-0 flex-1 grid-cols-2 gap-2 sm:gap-3 md:gap-4">
           <ClockDisplay
             label="Quarter"
             value={formatClockMs(clock.gameClockMs)}
