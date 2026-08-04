@@ -13,8 +13,14 @@ COPY packages/typescript-config/package.json ./packages/typescript-config/
 RUN bun install --frozen-lockfile
 
 FROM base AS runner
-COPY --from=install /app/node_modules ./node_modules
+ENV NODE_ENV=production
+# Bun's isolated linker places workspace-specific deps in nested
+# node_modules (apps/realtime/node_modules, packages/db/node_modules, ...),
+# not just the root one, so copy the whole installed tree.
+COPY --from=install /app /app
 COPY . .
 WORKDIR /app/apps/realtime
 EXPOSE 3001
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD bun -e "fetch('http://localhost:3001/health').then(r=>{if(!r.ok)throw 0}).catch(()=>process.exit(1))"
 CMD ["bun", "src/server.ts"]

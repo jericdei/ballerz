@@ -45,6 +45,20 @@
       "breakpoints": true
     },
     {
+      "idx": 6,
+      "version": "7",
+      "when": 1781860000000,
+      "tag": "0006_steep_hemingway",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781865000000,
+      "tag": "0007_game_clock_realtime",
+      "breakpoints": true
+    },
+    {
       "idx": 8,
       "version": "7",
       "when": 1782100000000,

@@ -3,8 +3,6 @@ services:
     image: postgres:18
     container_name: ballerz-postgres
     restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: ballerz
       POSTGRES_PASSWORD: ballerz
@@ -16,15 +14,37 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    # No published port: only reachable from other services on this stack's
+    # internal network. Use Dokploy's SSH/terminal access if you need psql.
+
+  # Runs pending Drizzle migrations once per deploy, then exits. web/realtime
+  # wait for this to finish successfully before they start.
+  migrate:
+    image: ballerz-realtime
+    build:
+      context: .
+      dockerfile: apps/realtime/Dockerfile
+    container_name: ballerz-migrate
+    working_dir: /app/packages/db
+    environment:
+      DATABASE_URL: postgresql://ballerz:ballerz@postgres:5432/ballerz
+    command: ["bun", "run", "src/migrate.ts"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: "no"
 
   realtime:
+    image: ballerz-realtime
     build:
       context: .
       dockerfile: apps/realtime/Dockerfile
     container_name: ballerz-realtime
     restart: unless-stopped
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     environment:
       DATABASE_URL: postgresql://ballerz:ballerz@postgres:5432/ballerz
       AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-random-secret}
@@ -33,6 +53,37 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Baked into the client bundle - must be the PUBLIC wss:// domain
+        # you assign to the `realtime` service in Dokploy, not an internal one.
+        NEXT_PUBLIC_REALTIME_WS_URL: ${NEXT_PUBLIC_REALTIME_WS_URL:-ws://localhost:3001/ws}
+    container_name: ballerz-web
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      DATABASE_URL: postgresql://ballerz:ballerz@postgres:5432/ballerz
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-random-secret}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      # Server-to-server call to realtime's /publish endpoint - internal
+      # docker network address, NOT the public domain.
+      REALTIME_URL: http://realtime:3001
+      REALTIME_PUBLISH_SECRET: ${REALTIME_PUBLISH_SECRET:-change-me-to-a-random-secret}
+      NEXT_PUBLIC_REALTIME_WS_URL: ${NEXT_PUBLIC_REALTIME_WS_URL:-ws://localhost:3001/ws}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      realtime:
+        condition: service_started
 
 volumes:
   postgres_data:
